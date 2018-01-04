@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    
+        <title>Creating Tag cloud of Categories in Jekyll &#8211; Madhur Ahuja</title>
+    
+
+    <meta name="author" content="Madhur Ahuja" />
+    <meta name="description" content=" Creating Tag cloud of Categories in Jekyll" />
+
+    <link rel="start" href="/" />
+
+    <link rel="alternate" type="application/atom+xml" href="http://feeds.feedburner.com/madhur" title="RSS feed" />
+    <link rel="shortcut icon" href="http://www.gravatar.com/avatar/5352cde0b084abcd6d4d783c08a51c76?s=16" />
+
+    <link rel="stylesheet" href="/files/css/bootstrap.min.css" type="text/css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/files/font-awesome/css/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="/files/css/jquery.fancybox.css" type="text/css" />
+
+    <link rel="stylesheet" type="text/css" href="/files/css/styles.css" />
+    
+    
+    <link rel="stylesheet" type="text/css" href="/files/css/syntax.css" />
+    
+
+    <link rel="stylesheet" type="text/css" media="print" href="/files/css/print.css">
+
+     
+   
+    <script src="/files/js/vendor/pace.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+
+    <div class="container">
+       
+            <header id="header" class="row">
+
+                <nav id="navigation" class="navbar navbar-inverse navbar-fixed-top " role="navigation">
+    <div class="container">
+
+    <div class="navbar-header">
+
+     <div class="hidden-md hidden-sm hidden-lg searchli">
+
+                <form method="get" role="search" id="searchform" action="/results" onsubmit="return checkfrm_search();">
+
+                    <div class="form-group">
+                        <input type="search" required id="q2" name="q" value="" class="form-control mobile" placeholder="Search" />
+                    </div>
+                </form>
+        </div>
+
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#mainmenu">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <!--  <a class="navbar-brand " href="/">Home</a> -->
+    </div>
+
+    <div class="collapse navbar-collapse" id="mainmenu">
+        <ul id="nav" class="nav navbar-nav">
+            
+            <li><a class="home" href="/">Home</a>
+            </li>
+            <li><a class="blog" href="/blog">Blog</a>
+            </li>
+            <!--<li><a class="work" href="/work">Resume</a></li>-->
+            <li><a class="code" href="/projects">Work</a>
+            </li>
+            <!--<li><a class="papers" href="/papers">Papers</a></li>-->
+            <li><a class="info" href="/info">About</a>
+            </li>
+            <li><a class="contact" href="/contact">Contact</a>
+            </li>
+
+        </ul>
+
+        <ul class="nav navbar-nav visible-md visible-lg visible-sm searchbox">
+            <li>
+                <form method="get" role="search" id="searchform" action="/results" onsubmit="return checkfrm_search();">
+
+                    <div class="form-group">
+                        <input type="search" required id="q1" name="q" value="" class="form-control desktop" placeholder="Search" />
+                    </div>
+                </form>
+            </li>
+        </ul>
+
+
+        <ul class="nav-icons navbar-right nav navbar-nav visible-md visible-lg">
+            <li><a href="http://www.linkedin.com/in/madhurahuja"><i class="fa fa-linkedin-square fa-3x"></i></a>
+            </li>
+            <li><a href="https://github.com/madhur"><i class="fa fa-github fa-3x"></i></a>
+            </li>
+            <li><a href="http://feeds.feedburner.com/madhur"><i class="fa fa-rss-square fa-3x"></i></a>
+            </li>
+        </ul>
+
+
+    </div>
+
+</div>
+</nav>
+
+
+            </header>
+       
+        <div id="content" class="row">
+
+            <section>
+
+	<div id="blogcontent">
+
+		<!--<aside class="postmeta col-md-3 hidden-print visible-md visible-lg">
+
+			
+
+		</aside>-->
+
+		<article id="blog-article" class="post col-md-12 clearfix">
+
+				<header><h1>Creating Tag cloud of Categories in Jekyll</h1></header>
+			
+					<!-- Place this tag where you want the +1 button to render -->
+<div class="row social hidden-xs">
+	<div class="col-md-2 col-sm-2">
+		<time datetime="2011-06-11 00:00:00 +0530" pubdate="pubdate">11 June 2011</time>
+	</div>
+    <div class="social-icon col-md-1 col-sm-1">
+        <div class="g-plusone" data-size="small"></div>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <a href="https://twitter.com/share?count=vertical" class="twitter-share-button" data-via="madhur25">Tweet</a>
+        <script>
+        ! function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0],
+                p = /^http:/.test(d.location) ? 'http' : 'https';
+            if (!d.getElementById(id)) {
+                js = d.createElement(s);
+                js.id = id;
+                js.src = p + '://platform.twitter.com/widgets.js';
+                fjs.parentNode.insertBefore(js, fjs);
+            }
+        }(document, 'script', 'twitter-wjs');
+        </script>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <script src="//platform.linkedin.com/in.js" type="text/javascript">
+        lang: en_US
+        </script>
+        <script type="IN/Share" data-counter="right"></script>
+    </div>
+
+    <div class="social-icon col-md-1 col-sm-2">
+        <a href="http://bufferapp.com/add" class="buffer-add-button" data-count="horizontal">Buffer</a>
+        <script type="text/javascript" src="https://d389zggrogs7qo.cloudfront.net/js/button.js"></script>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <a data-pocket-label="pocket" data-pocket-count="horizontal" class="pocket-btn" data-lang="en"></a>
+        <script type="text/javascript">
+        ! function(d, i) {
+            if (!d.getElementById(i)) {
+                var j = d.createElement("script");
+                j.id = i;
+                j.src = "https://widgets.getpocket.com/v1/j/btn.js?v=1";
+                var w = d.getElementById(i);
+                d.body.appendChild(j);
+            }
+        }(document, "pocket-btn-js");
+        </script>
+    </div>
+				<div class="social-icon col-md-2 col-sm-2">
+<script type="text/javascript" src="//www.redditstatic.com/button/button1.js"></script>
+				</div>
+
+	
+</div>
+<!-- Place this tag after the last plusone tag -->
+<!-- Place this tag after the last +1 button tag. -->
+<script type="text/javascript">
+(function() {
+    var po = document.createElement('script');
+    po.type = 'text/javascript';
+    po.async = true;
+    po.src = 'https://apis.google.com/js/platform.js';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(po, s);
+})();
+</script>
+
+
+			<hr style="margin-top:0px" />
+
+
+			 <p>I am a regular reader of <a href="https://groups.google.com/forum/?hl=en#!forum/jekyll-rb">Jekyll Google group</a> and of late I am seeing lot of queries from users on how to create Tag cloud or list of categories in Jekyll without any coding. Many members in past have done it by creating plugins and code in Ruby, such as <a href="http://nova-fusion.com/blog/">this one</a>. Ofcourse creating such an awesome Tag cloud requires code and effort.</p>
+
+<p>However, if you are looking me who doesn&#39;t know Ruby and doesn&#39;t have time to code, you can get it done with simple lines of <a href="http://www.liquidmarkup.org/">Liqud code</a>.</p>
+
+<p>For example, to create list of categories in Jekyll, use the following code</p>
+
+<figure class="highlight"><pre><code class="language-html" data-lang="html">{% if article.previous? %}
+{%  for category in site.categories %}
+<span class="nt">&lt;li&gt;&lt;a</span> <span class="na">href=</span><span class="s">"/categories/{{ category[0] }}.html"</span><span class="nt">&gt;&lt;/a&gt;&lt;/li&gt;</span>
+{ % endfor %}</code></pre></figure>
+
+<p>Similarly, this nested loop code will give you a categories page, assuming that {page.title} contains the name of the category.</p>
+
+<figure class="highlight"><pre><code class="language-html" data-lang="html">{% for  post in site.categories[page.title]  % }
+
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"postmeta extract"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">"timestamp"</span><span class="nt">&gt;</span>
+{{ post.date }}
+<span class="nt">&lt;br/&gt;</span>
+<span class="nt">&lt;span</span> <span class="na">class=</span><span class="s">"time"</span><span class="nt">&gt;&lt;/span&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"post extract"</span><span class="nt">&gt;</span>
+  
+    <span class="nt">&lt;h3&gt;&lt;a</span> <span class="na">href=</span><span class="s">"{{ post.url }}"</span><span class="nt">&gt;</span>{{ post.title }}<span class="nt">&lt;/a&gt;&lt;/h3&gt;</span>
+
+
+  <span class="nt">&lt;p&gt;</span>{{ post.content | strip_html | truncatewords:80 }}<span class="nt">&lt;/p&gt;</span>
+
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"blocked tags"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;p&gt;</span>
+    {% for tag in post.categories   % }
+    <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"/categories/{{ tag}}.html"</span><span class="nt">&gt;&lt;/a&gt;</span>
+,
+    {% endfor %}
+<span class="nt">&lt;/p&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"hr"</span><span class="nt">&gt;&lt;/div&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"c"</span><span class="nt">&gt;</span><span class="ni">&amp;nbsp;</span><span class="nt">&lt;/div&gt;</span>
+
+{% endfor %}</code></pre></figure>
+
+			<footer>
+				<div class="blocked tags">
+					<p>
+					
+						<a href="/blog/tags/jekyll">Jekyll</a> |
+					
+						<a href="/blog/tags/code">Code</a> |
+					
+					</p>
+				</div>
+			</footer>
+			
+			<br/>
+		
+			
+			
+			<div class="hr"></div>
+
+		
+
+
+			<!-- Discus Comments -->
+			<div id="disqus_thread"></div>
+
+			
+			<!-- Enable Disqus comments -->
+			<script type="text/javascript">
+  var disqus_developer = 0; // developer mode is on
+  var disqus_shortname = 'madhur';
+  var disqus_identifier = '/2011/06/03/tagcloud/';
+  var disqus_title = 'Creating Tag cloud of Categories in Jekyll';
+  var disqus_url = 'http://madhur.co.in/blog/2011/06/11/tagcloudjekyll.html';
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+
+</script>
+
+			
+			
+			
+			
+
+		</article>
+
+		<div class="c">&nbsp;</div>
+
+	</div>
+
+	
+</section>
+ 
+<div class="c">&nbsp;</div>
+
+
+  
+<script type="text/javascript">
+    
+    var disqus_shortname = 'madhur'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = 'http://' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+ 
+
+ 
+
+
+
+        </div>
+
+
+        <footer id="footer" class="row">
+
+            <p id="copyright">
+                &copy; 2011-2017 Madhur Ahuja
+            </p>
+            <p id="poweredby" class="visible-lg visible-md">
+                Powered by
+                <a href="http://jekyllrb.com" title="A static, minimalist CMS">Jekyll</a>, <a href="http://github.com/">Github</a> and <a href="http://disqus.com">Disqus</a>.
+            </p>
+
+            <div class="c">&nbsp;</div>
+
+
+        </footer>
+
+
+    </div>
+
+    <script data-main="/files/js/app" src="/files/js/require.js"></script>
+
+    
+        <script type="text/javascript">
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-23769089-1']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+    
+
+    <!-- serviceWorker.html -->
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/serviceWorker.js').then(function(reg) {
+        if (!reg.installing) return;
+        console.log("[*] ServiceWorker is installing...");
+
+        var worker = reg.installing;
+        worker.addEventListener('statechange', function() {
+            if (worker.state == 'redundant') {
+                console.log('[*] Install failed');
+            }
+            if (worker.state == 'installed') {
+                console.log('[*] Install successful!');
+            }
+        });
+    });
+}
+
+</script>
+
+</body>
+
+</html>

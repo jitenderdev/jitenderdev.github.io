@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    
+        <title>Feedly OAuth 2.0 implementation using Scribe in Java &#8211; Madhur Ahuja</title>
+    
+
+    <meta name="author" content="Madhur Ahuja" />
+    <meta name="description" content=" Feedly OAuth 2.0 implementation using Scribe in Java" />
+
+    <link rel="start" href="/" />
+
+    <link rel="alternate" type="application/atom+xml" href="http://feeds.feedburner.com/madhur" title="RSS feed" />
+    <link rel="shortcut icon" href="http://www.gravatar.com/avatar/5352cde0b084abcd6d4d783c08a51c76?s=16" />
+
+    <link rel="stylesheet" href="/files/css/bootstrap.min.css" type="text/css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/files/font-awesome/css/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="/files/css/jquery.fancybox.css" type="text/css" />
+
+    <link rel="stylesheet" type="text/css" href="/files/css/styles.css" />
+    
+    
+    <link rel="stylesheet" type="text/css" href="/files/css/syntax.css" />
+    
+
+    <link rel="stylesheet" type="text/css" media="print" href="/files/css/print.css">
+
+     
+   
+    <script src="/files/js/vendor/pace.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+
+    <div class="container">
+       
+            <header id="header" class="row">
+
+                <nav id="navigation" class="navbar navbar-inverse navbar-fixed-top " role="navigation">
+    <div class="container">
+
+    <div class="navbar-header">
+
+     <div class="hidden-md hidden-sm hidden-lg searchli">
+
+                <form method="get" role="search" id="searchform" action="/results" onsubmit="return checkfrm_search();">
+
+                    <div class="form-group">
+                        <input type="search" required id="q2" name="q" value="" class="form-control mobile" placeholder="Search" />
+                    </div>
+                </form>
+        </div>
+
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#mainmenu">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <!--  <a class="navbar-brand " href="/">Home</a> -->
+    </div>
+
+    <div class="collapse navbar-collapse" id="mainmenu">
+        <ul id="nav" class="nav navbar-nav">
+            
+            <li><a class="home" href="/">Home</a>
+            </li>
+            <li><a class="blog" href="/blog">Blog</a>
+            </li>
+            <!--<li><a class="work" href="/work">Resume</a></li>-->
+            <li><a class="code" href="/projects">Work</a>
+            </li>
+            <!--<li><a class="papers" href="/papers">Papers</a></li>-->
+            <li><a class="info" href="/info">About</a>
+            </li>
+            <li><a class="contact" href="/contact">Contact</a>
+            </li>
+
+        </ul>
+
+        <ul class="nav navbar-nav visible-md visible-lg visible-sm searchbox">
+            <li>
+                <form method="get" role="search" id="searchform" action="/results" onsubmit="return checkfrm_search();">
+
+                    <div class="form-group">
+                        <input type="search" required id="q1" name="q" value="" class="form-control desktop" placeholder="Search" />
+                    </div>
+                </form>
+            </li>
+        </ul>
+
+
+        <ul class="nav-icons navbar-right nav navbar-nav visible-md visible-lg">
+            <li><a href="http://www.linkedin.com/in/madhurahuja"><i class="fa fa-linkedin-square fa-3x"></i></a>
+            </li>
+            <li><a href="https://github.com/madhur"><i class="fa fa-github fa-3x"></i></a>
+            </li>
+            <li><a href="http://feeds.feedburner.com/madhur"><i class="fa fa-rss-square fa-3x"></i></a>
+            </li>
+        </ul>
+
+
+    </div>
+
+</div>
+</nav>
+
+
+            </header>
+       
+        <div id="content" class="row">
+
+            <section>
+
+	<div id="blogcontent">
+
+		<!--<aside class="postmeta col-md-3 hidden-print visible-md visible-lg">
+
+			
+
+		</aside>-->
+
+		<article id="blog-article" class="post col-md-12 clearfix">
+
+				<header><h1>Feedly OAuth 2.0 implementation using Scribe in Java</h1></header>
+			
+					<!-- Place this tag where you want the +1 button to render -->
+<div class="row social hidden-xs">
+	<div class="col-md-2 col-sm-2">
+		<time datetime="2014-04-17 00:00:00 +0530" pubdate="pubdate">17 April 2014</time>
+	</div>
+    <div class="social-icon col-md-1 col-sm-1">
+        <div class="g-plusone" data-size="small"></div>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <a href="https://twitter.com/share?count=vertical" class="twitter-share-button" data-via="madhur25">Tweet</a>
+        <script>
+        ! function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0],
+                p = /^http:/.test(d.location) ? 'http' : 'https';
+            if (!d.getElementById(id)) {
+                js = d.createElement(s);
+                js.id = id;
+                js.src = p + '://platform.twitter.com/widgets.js';
+                fjs.parentNode.insertBefore(js, fjs);
+            }
+        }(document, 'script', 'twitter-wjs');
+        </script>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <script src="//platform.linkedin.com/in.js" type="text/javascript">
+        lang: en_US
+        </script>
+        <script type="IN/Share" data-counter="right"></script>
+    </div>
+
+    <div class="social-icon col-md-1 col-sm-2">
+        <a href="http://bufferapp.com/add" class="buffer-add-button" data-count="horizontal">Buffer</a>
+        <script type="text/javascript" src="https://d389zggrogs7qo.cloudfront.net/js/button.js"></script>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <a data-pocket-label="pocket" data-pocket-count="horizontal" class="pocket-btn" data-lang="en"></a>
+        <script type="text/javascript">
+        ! function(d, i) {
+            if (!d.getElementById(i)) {
+                var j = d.createElement("script");
+                j.id = i;
+                j.src = "https://widgets.getpocket.com/v1/j/btn.js?v=1";
+                var w = d.getElementById(i);
+                d.body.appendChild(j);
+            }
+        }(document, "pocket-btn-js");
+        </script>
+    </div>
+				<div class="social-icon col-md-2 col-sm-2">
+<script type="text/javascript" src="//www.redditstatic.com/button/button1.js"></script>
+				</div>
+
+	
+</div>
+<!-- Place this tag after the last plusone tag -->
+<!-- Place this tag after the last +1 button tag. -->
+<script type="text/javascript">
+(function() {
+    var po = document.createElement('script');
+    po.type = 'text/javascript';
+    po.async = true;
+    po.src = 'https://apis.google.com/js/platform.js';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(po, s);
+})();
+</script>
+
+
+			<hr style="margin-top:0px" />
+
+
+			 <p>Since the Google Reader retirement, <a href="http://feedly.com">Feedly</a> hasb been slowly becoming more and more popular. Recently, Feedly announced their <a href="http://developer.feedly.com/">API Model</a> which 
+allows developers to create apps which integrate with feedly. Applications authenticate users using a feedly OAuth 2.0 interface. In this post, I am going to cover the Feedly OAuth 2.0 authentication flow 
+which can be used in  Mobile/Web apps. I am not going to cover any details into OAuth 2. The official specs of OAuth2 can be read <a href="http://tools.ietf.org/html/rfc6749">here</a> and a nice tutorial <a href="http://www.codecademy.com/tracks/oauth">here</a> on <a href="http://www.codecademy.com">Code Academy</a>. Wikipedia too gives a nice little intro about OAuth 2 given below:</p>
+
+<p>Quoting from Wikipedia  </p>
+
+<blockquote>
+<p>OAuth is an open standard for authorization. OAuth provides client applications a &#39;secure delegated access&#39; to server resources on behalf of a resource owner. It specifies a process for resource owners to 
+authorize third-party access to their server resources without sharing their credentials.
+OAuth is a service that is complementary to, and therefore distinct from, OpenID. OAuth is also distinct from OATH, which is a reference architecture for authentication, not a standard.</p>
+</blockquote>
+
+<p>Since, I am using Java platform, I will be using a nice little OAuth library called <a href="https://github.com/fernandezpablo85/scribe-java">Scribe</a>. It is an open source library hosted on github and is a great resource to learn about OAuth 2.0 flow and specs. Basically, to implement any OAuth 2.0 API, you need to extend a class called <code>DefaultApi20</code> and provide some of the obvious parameters such as <code>Authorization Url</code>, <code>Access token URL</code> and <code>client id</code> and <code>secret</code>.</p>
+
+<p>The implementation of this class is maintained in <a href="https://github.com/madhur/scribe-java">my fork of Scribe repo</a>. <a href="https://github.com/madhur/scribe-java/blob/master/src/main/java/org/scribe/builder/api/FeedlyApi20.java">This</a> is the direct link to the sources file. Feel free to use it to build awesome feedly Apps.</p>
+
+<p>I also created a <a href="https://github.com/madhur/scribe-java/blob/master/src/test/java/org/scribe/examples/Feedly20Example.java">test Java Program</a>. And here is the output of running the test:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">===</span> Feedly<span class="s1">'s OAuth Workflow ===
+
+Fetching the Authorization URL...
+Got the Authorization URL!
+Now go and authorize Scribe here:
+https://sandbox.feedly.com/v3/auth/auth?client_id=sandbox&amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080&amp;response_type=code&amp;scope=https://cloud.feedly.com/subscriptions
+And paste the authorization code here
+&gt;&gt;At2PvX57ImkiOiJiZmRiNDVkMi01MmRiLTRkMWUtOWRhOS01OGM5YWVjYzJjMzUiLCJ1IjoiMTAxMjk2MjUyNDE1MzQ5MDM1NzgwIiwicCI6NiwiYSI6IkZlZWRseSBzYW5kYm94IGNsaWVudCIsInQiOjEzOTc3MTg4NzkwNzJ9
+
+Trading the Request Token for an Access Token...
+Got the Access Token!
+(if your curious it looks like this: Token[AmdDThh7ImEiOiJGZWVkbHkgc2FuZGJveCBjbGllbnQiLCJlIjoxMzk4MzIzNjk1OTUzLCJpIjoiYmZkYjQ1ZDItNTJkYi00ZDFlLTlkYTktNThjOWFlY2MyYzM1IiwicCI6NiwidCI6MSwidiI6InNhbmRib3giLCJ4Ijoic3RhbmRhcmQifQ:sandbox , ] )
+
+Now we'</span>re going to access a protected resource...
+Got it! Lets see what we found...
+
+200
+<span class="o">{</span><span class="s2">"id"</span>:<span class="s2">"bfdb45d2-52db-4d1e-9da9-58c9aecc2c35"</span>,<span class="s2">"client"</span>:<span class="s2">"Feedly sandbox client"</span>,<span class="s2">"wave"</span>:<span class="s2">"2014.7"</span>,<span class="s2">"email"</span>:<span class="s2">"ahuja.madhur@gmail.com"</span>,<span class="s2">"familyName"</span>:<span class="s2">"Ahuja"</span>,<span class="s2">"givenName"</span>:<span class="s2">"Madhur"</span>,<span class="s2">"google"</span>:<span class="s2">"101296252415349035780"</span>,<span class="s2">"gender"</span>:<span class="s2">"male"</span>,<span class="s2">"picture"</span>:<span class="s2">"https://lh3.googleusercontent.com/-YffmYR2CFxI/AAAAAAAAAAI/AAAAAAAAJCw/SIOxMsWmxYQ/photo.jpg?sz=50"</span>,<span class="s2">"created"</span>:1392372977783,<span class="s2">"windowsLiveConnected"</span>:false,<span class="s2">"wordPressConnected"</span>:false,<span class="s2">"facebookConnected"</span>:false,<span class="s2">"evernoteConnected"</span>:false,<span class="s2">"pocketConnected"</span>:false,<span class="s2">"twitterConnected"</span>:false,<span class="s2">"fullName"</span>:<span class="s2">"Madhur Ahuja"</span><span class="o">}</span>
+
+Thats it man! Go and build something awesome with Scribe! :<span class="o">)</span></code></pre></figure>
+
+			<footer>
+				<div class="blocked tags">
+					<p>
+					
+						<a href="/blog/tags/feedly">Feedly</a> |
+					
+						<a href="/blog/tags/oauth2">OAuth2</a> |
+					
+					</p>
+				</div>
+			</footer>
+			
+			<br/>
+		
+			
+			
+			<div class="hr"></div>
+
+		
+
+
+			<!-- Discus Comments -->
+			<div id="disqus_thread"></div>
+
+			
+			<!-- Enable Disqus comments -->
+			<script type="text/javascript">
+  var disqus_developer = 0; // developer mode is on
+  var disqus_shortname = 'madhur';
+  var disqus_identifier = '/2014/05/17/feedlyoauth2/';
+  var disqus_title = 'Feedly OAuth 2.0 implementation using Scribe in Java';
+  var disqus_url = 'http://madhur.co.in/blog/2014/04/17/feedlyoauth2flow.html';
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+
+</script>
+
+			
+			
+			
+			
+
+		</article>
+
+		<div class="c">&nbsp;</div>
+
+	</div>
+
+	
+</section>
+ 
+<div class="c">&nbsp;</div>
+
+
+  
+<script type="text/javascript">
+    
+    var disqus_shortname = 'madhur'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = 'http://' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+ 
+
+ 
+
+
+
+        </div>
+
+
+        <footer id="footer" class="row">
+
+            <p id="copyright">
+                &copy; 2011-2017 Madhur Ahuja
+            </p>
+            <p id="poweredby" class="visible-lg visible-md">
+                Powered by
+                <a href="http://jekyllrb.com" title="A static, minimalist CMS">Jekyll</a>, <a href="http://github.com/">Github</a> and <a href="http://disqus.com">Disqus</a>.
+            </p>
+
+            <div class="c">&nbsp;</div>
+
+
+        </footer>
+
+
+    </div>
+
+    <script data-main="/files/js/app" src="/files/js/require.js"></script>
+
+    
+        <script type="text/javascript">
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-23769089-1']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+    
+
+    <!-- serviceWorker.html -->
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/serviceWorker.js').then(function(reg) {
+        if (!reg.installing) return;
+        console.log("[*] ServiceWorker is installing...");
+
+        var worker = reg.installing;
+        worker.addEventListener('statechange', function() {
+            if (worker.state == 'redundant') {
+                console.log('[*] Install failed');
+            }
+            if (worker.state == 'installed') {
+                console.log('[*] Install successful!');
+            }
+        });
+    });
+}
+
+</script>
+
+</body>
+
+</html>

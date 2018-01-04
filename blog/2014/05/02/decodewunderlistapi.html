@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    
+        <title>Decoding the hidden Wunderlist API (Part I) &#8211; Madhur Ahuja</title>
+    
+
+    <meta name="author" content="Madhur Ahuja" />
+    <meta name="description" content=" Decoding the hidden Wunderlist API (Part I)" />
+
+    <link rel="start" href="/" />
+
+    <link rel="alternate" type="application/atom+xml" href="http://feeds.feedburner.com/madhur" title="RSS feed" />
+    <link rel="shortcut icon" href="http://www.gravatar.com/avatar/5352cde0b084abcd6d4d783c08a51c76?s=16" />
+
+    <link rel="stylesheet" href="/files/css/bootstrap.min.css" type="text/css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/files/font-awesome/css/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="/files/css/jquery.fancybox.css" type="text/css" />
+
+    <link rel="stylesheet" type="text/css" href="/files/css/styles.css" />
+    
+    
+    <link rel="stylesheet" type="text/css" href="/files/css/syntax.css" />
+    
+
+    <link rel="stylesheet" type="text/css" media="print" href="/files/css/print.css">
+
+     
+   
+    <script src="/files/js/vendor/pace.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+
+    <div class="container">
+       
+            <header id="header" class="row">
+
+                <nav id="navigation" class="navbar navbar-inverse navbar-fixed-top " role="navigation">
+    <div class="container">
+
+    <div class="navbar-header">
+
+     <div class="hidden-md hidden-sm hidden-lg searchli">
+
+                <form method="get" role="search" id="searchform" action="/results" onsubmit="return checkfrm_search();">
+
+                    <div class="form-group">
+                        <input type="search" required id="q2" name="q" value="" class="form-control mobile" placeholder="Search" />
+                    </div>
+                </form>
+        </div>
+
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#mainmenu">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <!--  <a class="navbar-brand " href="/">Home</a> -->
+    </div>
+
+    <div class="collapse navbar-collapse" id="mainmenu">
+        <ul id="nav" class="nav navbar-nav">
+            
+            <li><a class="home" href="/">Home</a>
+            </li>
+            <li><a class="blog" href="/blog">Blog</a>
+            </li>
+            <!--<li><a class="work" href="/work">Resume</a></li>-->
+            <li><a class="code" href="/projects">Work</a>
+            </li>
+            <!--<li><a class="papers" href="/papers">Papers</a></li>-->
+            <li><a class="info" href="/info">About</a>
+            </li>
+            <li><a class="contact" href="/contact">Contact</a>
+            </li>
+
+        </ul>
+
+        <ul class="nav navbar-nav visible-md visible-lg visible-sm searchbox">
+            <li>
+                <form method="get" role="search" id="searchform" action="/results" onsubmit="return checkfrm_search();">
+
+                    <div class="form-group">
+                        <input type="search" required id="q1" name="q" value="" class="form-control desktop" placeholder="Search" />
+                    </div>
+                </form>
+            </li>
+        </ul>
+
+
+        <ul class="nav-icons navbar-right nav navbar-nav visible-md visible-lg">
+            <li><a href="http://www.linkedin.com/in/madhurahuja"><i class="fa fa-linkedin-square fa-3x"></i></a>
+            </li>
+            <li><a href="https://github.com/madhur"><i class="fa fa-github fa-3x"></i></a>
+            </li>
+            <li><a href="http://feeds.feedburner.com/madhur"><i class="fa fa-rss-square fa-3x"></i></a>
+            </li>
+        </ul>
+
+
+    </div>
+
+</div>
+</nav>
+
+
+            </header>
+       
+        <div id="content" class="row">
+
+            <section>
+
+	<div id="blogcontent">
+
+		<!--<aside class="postmeta col-md-3 hidden-print visible-md visible-lg">
+
+			
+
+		</aside>-->
+
+		<article id="blog-article" class="post col-md-12 clearfix">
+
+				<header><h1>Decoding the hidden Wunderlist API (Part I)</h1></header>
+			
+					<!-- Place this tag where you want the +1 button to render -->
+<div class="row social hidden-xs">
+	<div class="col-md-2 col-sm-2">
+		<time datetime="2014-05-02 00:00:00 +0530" pubdate="pubdate">02 May 2014</time>
+	</div>
+    <div class="social-icon col-md-1 col-sm-1">
+        <div class="g-plusone" data-size="small"></div>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <a href="https://twitter.com/share?count=vertical" class="twitter-share-button" data-via="madhur25">Tweet</a>
+        <script>
+        ! function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0],
+                p = /^http:/.test(d.location) ? 'http' : 'https';
+            if (!d.getElementById(id)) {
+                js = d.createElement(s);
+                js.id = id;
+                js.src = p + '://platform.twitter.com/widgets.js';
+                fjs.parentNode.insertBefore(js, fjs);
+            }
+        }(document, 'script', 'twitter-wjs');
+        </script>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <script src="//platform.linkedin.com/in.js" type="text/javascript">
+        lang: en_US
+        </script>
+        <script type="IN/Share" data-counter="right"></script>
+    </div>
+
+    <div class="social-icon col-md-1 col-sm-2">
+        <a href="http://bufferapp.com/add" class="buffer-add-button" data-count="horizontal">Buffer</a>
+        <script type="text/javascript" src="https://d389zggrogs7qo.cloudfront.net/js/button.js"></script>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <a data-pocket-label="pocket" data-pocket-count="horizontal" class="pocket-btn" data-lang="en"></a>
+        <script type="text/javascript">
+        ! function(d, i) {
+            if (!d.getElementById(i)) {
+                var j = d.createElement("script");
+                j.id = i;
+                j.src = "https://widgets.getpocket.com/v1/j/btn.js?v=1";
+                var w = d.getElementById(i);
+                d.body.appendChild(j);
+            }
+        }(document, "pocket-btn-js");
+        </script>
+    </div>
+				<div class="social-icon col-md-2 col-sm-2">
+<script type="text/javascript" src="//www.redditstatic.com/button/button1.js"></script>
+				</div>
+
+	
+</div>
+<!-- Place this tag after the last plusone tag -->
+<!-- Place this tag after the last +1 button tag. -->
+<script type="text/javascript">
+(function() {
+    var po = document.createElement('script');
+    po.type = 'text/javascript';
+    po.async = true;
+    po.src = 'https://apis.google.com/js/platform.js';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(po, s);
+})();
+</script>
+
+
+			<hr style="margin-top:0px" />
+
+
+			 <p>Without any doubt, <a href="https://www.wunderlist.com">Wunderlist</a> is the most popular to do list manager. With its increasing popularity, demand is growing for people to let Wunderlist expose 
+its API to public so that users can build great apps around it and integrate it with their systems. Posts such as <a href="https://wunderlist.uservoice.com/forums/136230-wunderlist-feature-requests/suggestions/2378704-developers-api">this</a> on Wunderlist support forum clearly indicate the popularity and demand for such an API.</p>
+
+<p>Although, Wunderlist has yet not exposed any public API but it seems there are definite plans for that going by post such as <a href="http://techcrunch.com/2013/11/12/to-do-app-wunderlist-confirms-19m-series-b-and-expands-to-the-us-while-sequoia-heads-into-germany/">this</a>
+Nevertheless, what I found is that it is easy to discover the Wunderlist API by simply inspecting the HTTPS traffic over the Wunderlist web site. If we see their Licenses section, it is easy to see that they 
+use <a href="http://backbonejs.org/">backbone.js</a> along with <a href="http://jquery.com/">Jquery</a> and <a href="http://requirejs.org/">RequireJs</a> giving the clear indication of MVC pattern being in use along with <a href="">JSON</a> as the data exchange format</p>
+
+<p><img src="/images/Blog/screenshot.1.png" alt=""></p>
+
+<p>Now, lets head over to the browser to inspect the HTTPS traffic and see if we can get some information about their API. What I am going to do is login to Wunderlist website with my credentials and record the 
+HTTPS traffic in the Chrome inspector. I have also turned on the button for <code>Preserve log upon Navigation</code></p>
+
+<p><img src="/images/Blog/screenshot.2.png" alt="">
+<img src="/images/Blog/screenshot.3.png" alt=""></p>
+
+<p>If we filter by requests of type XML HTTP Request(XHR), we will see a <code>POST</code> request <code>/login</code> to the host <code>api.wunderlist.com</code>. In the request payload, I also see my username and password in cleartext. Although
+I do not have anything to worry since this is transmitted over SSL</p>
+
+<p><img src="/images/Blog/screenshot.4.png" alt=""></p>
+
+<p>If we just scroll few lines down, I see another request <code>/batch</code> to <code>api.wunderlist.com</code> with this JSON payload and the response is a considerable JSON response. I could the names of lists and tasks in the JSON response.</p>
+
+<p><img src="/images/Blog/screenshot.5.png" alt=""></p>
+
+<figure class="highlight"><pre><code class="language-json" data-lang="json"><span class="p">{</span><span class="s2">"ops"</span><span class="p">:[</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"put"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/settings"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{</span><span class="s2">"web_significant_event_count"</span><span class="p">:</span><span class="s2">"5"</span><span class="p">,</span><span class="s2">"web_shortcut_add_new_task"</span><span class="p">:</span><span class="s2">"CTRL + 0"</span><span class="p">}},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me"</span><span class="p">},{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/settings"</span><span class="p">},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/contacts"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{}},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/services"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{}},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/lists"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{</span><span class="s2">"since"</span><span class="p">:</span><span class="s2">"1399004140"</span><span class="p">}},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/tasks"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{</span><span class="s2">"before"</span><span class="p">:</span><span class="mi">1399141799</span><span class="p">,</span><span class="s2">"limit"</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="s2">"compact"</span><span class="p">:</span><span class="kc">true</span><span class="p">}},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/reminders"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{}},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/shares"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{}},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/events"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{</span><span class="s2">"locale"</span><span class="p">:</span><span class="s2">"en_US"</span><span class="p">}},</span><span class="w">
+</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span><span class="s2">"get"</span><span class="p">,</span><span class="s2">"url"</span><span class="p">:</span><span class="s2">"/me/quota"</span><span class="p">,</span><span class="s2">"params"</span><span class="p">:{}}],</span><span class="w">
+</span><span class="s2">"sequential"</span><span class="p">:</span><span class="kc">true</span><span class="p">}</span></code></pre></figure>
+
+<p>Great, it seems that we have just discovered a bunch of REST API calls. These are batched together in single HTTP request for optimization. We also know the method <code>GET</code> or <code>POST</code> of these requests and also the parameters some of them. The next step is to take this request individually and test it one by one. But how do we do it?</p>
+
+<p>For this purpose, I am using an excellent Chrome extension called <a href="https://chrome.google.com/webstore/detail/dev-http-client/aejoelaoggembcahagimdiliamlcdmfm?hl=en">Dev HTTP Client</a></p>
+
+<p>First, lets authenticate ourselves using the <code>/login</code> API. This will be a post request containing the <code>username</code> and <code>password</code> for the Wunderlist.</p>
+
+<p><a href="/images/Blog/screenshot.7.png"><img src="/images/Blog/screenshot.7.png" alt=""></a></p>
+
+<p>The result is the following JSON response:</p>
+
+<figure class="highlight"><pre><code class="language-json" data-lang="json"><span class="p">{</span><span class="w">
+</span><span class="s2">"id"</span><span class="p">:</span><span class="s2">"AAAEAABXCxQ"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"created_at"</span><span class="p">:</span><span class="s2">"2014-04-30T11:59:36Z"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"updated_at"</span><span class="p">:</span><span class="s2">"2014-04-30T11:59:36Z"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"name"</span><span class="p">:</span><span class="s2">"madhur"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"type"</span><span class="p">:</span><span class="s2">"User"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"avatar"</span><span class="p">:</span><span class="s2">"https://graph.facebook.com/522955158/picture?width=0&amp;height=0"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"email"</span><span class="p">:</span><span class="s2">"ahuja.madhur@gmail.com"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"token"</span><span class="p">:</span><span class="s2">"8758a4a0f983177a427a879a30b144d92bc2f01e"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"terms_accepted_at"</span><span class="p">:</span><span class="s2">"2013-07-07"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"confirmation_state"</span><span class="p">:</span><span class="s2">"confirmed_email"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"email_confirmed"</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span><span class="w">
+</span><span class="s2">"channel"</span><span class="p">:</span><span class="s2">"me.updates.2ea715786fc5ed6af21a97d2104ac4a095349e9b"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"product"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="w">
+</span><span class="s2">"group_product"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="w">
+</span><span class="s2">"facebook"</span><span class="p">:</span><span class="s2">"522955158"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"settings"</span><span class="p">:{</span><span class="w">
+</span><span class="s2">"account_locale"</span><span class="p">:</span><span class="s2">"en"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"background"</span><span class="p">:</span><span class="s2">"wlbackground03"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"campaign_iyf4_notification"</span><span class="p">:</span><span class="s2">"true"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"campaign_iyf4_notification_last_date"</span><span class="p">:</span><span class="s2">"2013-12-16T00:47:14Z"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"campaign_iyf4_notification_variation"</span><span class="p">:</span><span class="s2">"c"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_assigning_daily"</span><span class="p">:</span><span class="s2">"0"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_assigning_daily_date"</span><span class="p">:</span><span class="s2">"2013-09-26"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_assigning_overall"</span><span class="p">:</span><span class="s2">"0"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_comments_daily"</span><span class="p">:</span><span class="s2">"0"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_comments_daily_date"</span><span class="p">:</span><span class="s2">"2013-09-26"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_comments_overall"</span><span class="p">:</span><span class="s2">"0"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_files_daily"</span><span class="p">:</span><span class="s2">"0"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_files_daily_date"</span><span class="p">:</span><span class="s2">"2013-09-26"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"consumed_quota_files_overall"</span><span class="p">:</span><span class="s2">"0"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"created_by_compound_id"</span><span class="p">:</span><span class="s2">"AAAEAABXCxQ"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"created_by_id"</span><span class="p">:</span><span class="s2">"5704468"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"created_by_type"</span><span class="p">:</span><span class="s2">"User"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"experiment_chatter_notifications"</span><span class="p">:</span><span class="s2">"compacted"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"notifications_email_enabled"</span><span class="p">:</span><span class="s2">"false"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"notifications_push_enabled"</span><span class="p">:</span><span class="s2">"true"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"setting"</span><span class="p">:</span><span class="s2">"{}"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"show_completed_items"</span><span class="p">:</span><span class="s2">"false"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"sound_checkoff_enabled"</span><span class="p">:</span><span class="s2">"false"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"sound_notification_enabled"</span><span class="p">:</span><span class="s2">"false"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"start_of_week"</span><span class="p">:</span><span class="s2">"mon"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"use_badge_icon"</span><span class="p">:</span><span class="s2">"notifications"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_app_open_count"</span><span class="p">:</span><span class="s2">"2"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_coach_mark_detail_view"</span><span class="p">:</span><span class="s2">"completed"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_coach_mark_inbox"</span><span class="p">:</span><span class="s2">"completed"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_coach_mark_smart_list"</span><span class="p">:</span><span class="s2">"completed"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_last_app_open_date"</span><span class="p">:</span><span class="s2">"1398969000000"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_last_used_release"</span><span class="p">:</span><span class="s2">"2.3.8.3"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_new_installation"</span><span class="p">:</span><span class="s2">"true"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_shortcut_add_new_task"</span><span class="p">:</span><span class="s2">"CTRL + 0"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_significant_event_count"</span><span class="p">:</span><span class="s2">"5"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"web_uuid"</span><span class="p">:</span><span class="s2">"d45186f5-0699-4986-906d-c6ad3f88c180"</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>This piece of information is very important for us in JSON response: <code>token:8758a4a0f983177a427a879a30b144d92bc2f01e</code>. This is the token which we need to send in 
+any of the other REST API requests otherwise you will get this error in response:</p>
+
+<figure class="highlight"><pre><code class="language-json" data-lang="json"><span class="p">{</span><span class="w">
+</span><span class="s2">"errors"</span><span class="p">:</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"message"</span><span class="p">:</span><span class="s2">"You must be authenticated to continue."</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"type"</span><span class="p">:</span><span class="s2">"unauthorized"</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>Let&#39;s try to retrieve the lists using the <code>/lists</code> API and the token:</p>
+
+<p><a href="/images/Blog/screenshot.8.png"><img src="/images/Blog/screenshot.8.png" alt=""></a></p>
+
+<p>The result is the list of Wunderlist lists I have in my account:</p>
+
+<figure class="highlight"><pre><code class="language-json" data-lang="json"><span class="w">    </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"id"</span><span class="p">:</span><span class="s2">"ABAEAAS9pWM"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"type"</span><span class="p">:</span><span class="s2">"List"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"local_identifier"</span><span class="p">:</span><span class="s2">"localId:prepopulated:AAAEAABXCxQ:List:private"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"owner_id"</span><span class="p">:</span><span class="s2">"AAAEAABXCxQ"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"position"</span><span class="p">:</span><span class="mf">4.37502</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"title"</span><span class="p">:</span><span class="s2">"Private"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"created_at"</span><span class="p">:</span><span class="s2">"2013-07-07T01:25:06Z"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"updated_at"</span><span class="p">:</span><span class="s2">"2014-04-29T11:05:46Z"</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"id"</span><span class="p">:</span><span class="s2">"ABAEAAS9pWQ"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"type"</span><span class="p">:</span><span class="s2">"List"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"local_identifier"</span><span class="p">:</span><span class="s2">"localId:prepopulated:AAAEAABXCxQ:List:work"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"owner_id"</span><span class="p">:</span><span class="s2">"AAAEAABXCxQ"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"position"</span><span class="p">:</span><span class="mf">1.87502</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"title"</span><span class="p">:</span><span class="s2">"Work"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"created_at"</span><span class="p">:</span><span class="s2">"2013-07-07T01:25:06Z"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"updated_at"</span><span class="p">:</span><span class="s2">"2014-04-11T07:52:33Z"</span><span class="w">
+    </span><span class="p">}</span></code></pre></figure>
+
+<p>Using a similar approach, we can invoke the following REST API&#39;s and get their responses in JSON:</p>
+
+<p><code>/me/settings</code><br>
+<code>/me</code><br>
+<code>/me/contacts</code><br>
+<code>/me/services</code><br>
+<code>/me/lists</code><br>
+<code>/me/tasks</code><br>
+<code>/me/reminders</code><br>
+<code>/me/shares</code><br>
+<code>/me/events</code><br>
+<code>/me/quota</code>  </p>
+
+<h2>A note about authentication</h2>
+
+<p>At this moment, there is no OAuth implementation for the authorization on this API and probably this is the reason the API is not public yet.
+This means, the token we recieve in response <code>/login</code> call will have some expiry date attached to it. Hence, if we plan to build some functionality based on this information,
+it is sufficient to assume that we need to re-authenticate using the <code>username</code> and <code>password</code> once the token expires.</p>
+
+<p>In the part II of this blog post, I am going to share a partial implementation of this API in java using <a href="http://square.github.io/retrofit/">Retrofit</a></p>
+
+			<footer>
+				<div class="blocked tags">
+					<p>
+					
+						<a href="/blog/tags/wunderlist">Wunderlist</a> |
+					
+						<a href="/blog/tags/api">API</a> |
+					
+						<a href="/blog/tags/rest">REST</a> |
+					
+					</p>
+				</div>
+			</footer>
+			
+			<br/>
+		
+			
+			
+			<div class="hr"></div>
+
+		
+
+
+			<!-- Discus Comments -->
+			<div id="disqus_thread"></div>
+
+			
+			<!-- Enable Disqus comments -->
+			<script type="text/javascript">
+  var disqus_developer = 0; // developer mode is on
+  var disqus_shortname = 'madhur';
+  var disqus_identifier = '/2014/05/02/decodewunderlistapi/';
+  var disqus_title = 'Decoding the hidden Wunderlist API (Part I)';
+  var disqus_url = 'http://madhur.co.in/blog/2014/05/02/decodewunderlistapi.html';
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+
+</script>
+
+			
+			
+			
+			
+
+		</article>
+
+		<div class="c">&nbsp;</div>
+
+	</div>
+
+	
+</section>
+ 
+<div class="c">&nbsp;</div>
+
+
+  
+<script type="text/javascript">
+    
+    var disqus_shortname = 'madhur'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = 'http://' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+ 
+
+ 
+
+
+
+        </div>
+
+
+        <footer id="footer" class="row">
+
+            <p id="copyright">
+                &copy; 2011-2017 Madhur Ahuja
+            </p>
+            <p id="poweredby" class="visible-lg visible-md">
+                Powered by
+                <a href="http://jekyllrb.com" title="A static, minimalist CMS">Jekyll</a>, <a href="http://github.com/">Github</a> and <a href="http://disqus.com">Disqus</a>.
+            </p>
+
+            <div class="c">&nbsp;</div>
+
+
+        </footer>
+
+
+    </div>
+
+    <script data-main="/files/js/app" src="/files/js/require.js"></script>
+
+    
+        <script type="text/javascript">
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-23769089-1']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+    
+
+    <!-- serviceWorker.html -->
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/serviceWorker.js').then(function(reg) {
+        if (!reg.installing) return;
+        console.log("[*] ServiceWorker is installing...");
+
+        var worker = reg.installing;
+        worker.addEventListener('statechange', function() {
+            if (worker.state == 'redundant') {
+                console.log('[*] Install failed');
+            }
+            if (worker.state == 'installed') {
+                console.log('[*] Install successful!');
+            }
+        });
+    });
+}
+
+</script>
+
+</body>
+
+</html>

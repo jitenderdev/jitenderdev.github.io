@@ -1,0 +1,1463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ 
+ <title>Coding it my way</title>
+ <link href="http://madhur.co.in/atom.xml" rel="self"/>
+ <link href="http://madhur.co.in/blogindex.html/"/>
+ <updated>2017-04-30T21:34:27+05:30</updated>
+ <id>http://madhur.co.in/blogindex.html</id>
+ <author>
+   <name>Madhur Ahuja</name>
+   <email>ahuja.madhur@gmail.com</email>
+ </author>
+ 
+ 
+ <entry>
+   <title>Handling stack traces in Elasticsearch Logstash Kibana (ELK)</title>
+   <link href="http://madhur.co.in/blog/2017/04/30/view-exceptions-in-elk.html"/>
+   <updated>2017-04-30T00:00:00+05:30</updated>
+   <id>id:/blog/2017/04/30/view-exceptions-in-elk</id>
+   <content type="html">&lt;p&gt;I use &lt;a href=&quot;https://www.elastic.co/webinars/introduction-elk-stack&quot;&gt;Elasticsearch Logstash Kibana (ELK)&lt;/a&gt; stack for visualizing lot of things like Nginx logs, HaProxy logs etc.&lt;/p&gt;
+
+&lt;p&gt;I also ingest application logs into the ELK. One thing I have been looking to do is visualization of errors happening into the system. Surely, Nginx and Haproxy logs can give you visualization of 500 status codes but there are many cases where the status code is 2xx but the internal error in the system is logged.&lt;/p&gt;
+
+&lt;p&gt;Our most of the microservices are written in Java / Python / Node.js and so I am only concentrating on those. A typical java exception stack trace when logged looks like this:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;Exception in thread &quot;main&quot; java.lang.NullPointerException
+        at com.example.myproject.Book.getTitle(Book.java:16)
+        at com.example.myproject.Author.getBookTitles(Author.java:25)
+        at com.example.myproject.Bootstrap.main(Bootstrap.java:14)&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Normally, this will be ingested line by line in ELK stack, which breaks the entire message.&lt;/p&gt;
+
+&lt;p&gt;For entire stack trace to be ingested as a single message, we need to configure the &lt;code&gt;multiline&lt;/code&gt; plugin either in &lt;a href=&quot;https://www.elastic.co/products/logstash&quot;&gt;Logstash&lt;/a&gt; or &lt;a href=&quot;https://www.elastic.co/products/beats/filebeat&quot;&gt;Filebeat&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I prefer to do this configuration in filebeat, here is how my typical configuration looks like:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-yaml&quot; data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;filebeat&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;tail_files&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;true&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;prospectors&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+   &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;paths&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;/var/log/example.log&lt;/span&gt;     
+      &lt;span class=&quot;na&quot;&gt;input_type&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;log&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;document_type&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;log&lt;/span&gt;
+      &lt;span class=&quot;s&quot;&gt;multiline.pattern&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;^[[:space:]]'&lt;/span&gt;
+      &lt;span class=&quot;s&quot;&gt;multiline.negate&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;false&lt;/span&gt;
+      &lt;span class=&quot;s&quot;&gt;multiline.match&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;after&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;registry_file&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;/var/lib/filebeat/registry&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;logstash&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;hosts&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;logstash_server&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;worker&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;4&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;bulk_max_size &lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;8192&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;shipper&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;logging&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;files&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;/var/log/filebeat&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;rotateeverybytes&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;10485760&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# = 10MB&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;level&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;info&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The lines below in the configuration configures the multiline processing. i.e. If a line starts with series of spaces (as in the case of stack trace), it should be considered as a part of previous line.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;multiline.pattern: '^[[:space:]]'
+multiline.negate: false
+multiline.match: after&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Once, we configure the multiline, here is how our messages should look like:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/stacktrace.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;The next step is to parse this exception stacktrace and extract useful information like Exception class etc.&lt;/p&gt;
+
+&lt;p&gt;For this, we can use built in logstash parser &lt;code&gt;JAVASTACKTRACEPART&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;grok {
+                     match =&amp;gt; { &quot;message&quot; =&amp;gt;[
+                                               &quot;%{JAVASTACKTRACEPART}&quot;
+                                             ]
+                                }
+
+              }&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;This will extract various useful fields like line no, class and method name from the exception stack trace.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Using curator to delete older elasticsearch indices</title>
+   <link href="http://madhur.co.in/blog/2017/04/09/usingcuratordeleteelasticindex.html"/>
+   <updated>2017-04-09T00:00:00+05:30</updated>
+   <id>id:/blog/2017/04/09/usingcuratordeleteelasticindex</id>
+   <content type="html">&lt;p&gt;We use &lt;a href=&quot;https://www.elastic.co/webinars/introduction-elk-stack&quot;&gt;ELK stack&lt;/a&gt; heavily in our production systems for log aggregation and monitoring.&lt;/p&gt;
+
+&lt;p&gt;Our daily log size generated is aroudn 100GB. Since, we do not intend to keep the log files in ELK for more than a month, it becomes important that we delete those indices to free up disk space.&lt;/p&gt;
+
+&lt;p&gt;Fortunately, &lt;a href=&quot;https://www.elastic.co/products/logstash&quot;&gt;Logstash&lt;/a&gt; creates a new index every day by default.&lt;/p&gt;
+
+&lt;p&gt;Thus, we can ask &lt;a href=&quot;https://github.com/elastic/curator&quot;&gt;Curator&lt;/a&gt; to simply delete the indices x days old and which follow a particular naming pattern.&lt;/p&gt;
+
+&lt;h3&gt;Installing Curator&lt;/h3&gt;
+
+&lt;p&gt;Simple use &lt;code&gt;pip install elasticsearch-curator&lt;/code&gt; to install Curator on your machine. I prefer to install it on the Elasticsearch machine itself.&lt;/p&gt;
+
+&lt;h3&gt;Configuring Curator&lt;/h3&gt;
+
+&lt;p&gt;Create a file &lt;code&gt;curator.yml&lt;/code&gt; with following contents.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-yaml&quot; data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;nn&quot;&gt;---&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;hosts&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;127.0.0.1&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;9200&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;url_prefix&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;use_ssl&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;certificate&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;client_cert&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;client_key&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;ssl_no_validate&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;http_auth&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;30&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;master_only&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;logging&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;loglevel&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;INFO&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;logfile&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;logformat&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;default&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;blacklist&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;elasticsearch'&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;urllib3'&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now, we need to define an action. i.e. What will curator do.  There are many actions to choose from. Check the &lt;a href=&quot;https://www.elastic.co/guide/en/elasticsearch/client/curator/current/actions.html&quot;&gt;documentation&lt;/a&gt; for more information&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Alias&lt;/li&gt;
+&lt;li&gt;Allocation&lt;/li&gt;
+&lt;li&gt;Close&lt;/li&gt;
+&lt;li&gt;Cluster Routing&lt;/li&gt;
+&lt;li&gt;Create Index&lt;/li&gt;
+&lt;li&gt;Delete Indices&lt;/li&gt;
+&lt;li&gt;Delete Snapshots&lt;/li&gt;
+&lt;li&gt;Open&lt;/li&gt;
+&lt;li&gt;forceMerge&lt;/li&gt;
+&lt;li&gt;Replicas&lt;/li&gt;
+&lt;li&gt;Restore&lt;/li&gt;
+&lt;li&gt;Snapshot&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;For this dicussion, we will use &lt;code&gt;Delete Indices&lt;/code&gt; as the action, since this is what we want to do.&lt;/p&gt;
+
+&lt;p&gt;Below is the sample action file &lt;code&gt;delete_indices.yml&lt;/code&gt; , which will delete the logstash indices which are older than 10 days.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-yaml&quot; data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;nn&quot;&gt;---&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;actions&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;action&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;delete_indices&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;&amp;gt;-&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;Delete indices older than 45 days (based on index name), for logstash-&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;prefixed indices. Ignore the error if the filter does not result in an&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;actionable list of indices (ignore_empty_list) and exit cleanly.&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;options:&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;ignore_empty_list: True&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;timeout_override:&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;continue_if_exception: False&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;disable_action: False&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;filters:&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;- filtertype: pattern&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;kind: prefix&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;value: logstash-&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;exclude:&lt;/span&gt;
+    &lt;span class=&quot;no&quot;&gt;- filtertype: age&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;source: name&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;direction: older&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;timestring: '%Y.%m.%d'&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;unit: days&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;unit_count: 10&lt;/span&gt;
+      &lt;span class=&quot;no&quot;&gt;exclude:&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;To run this action, simple use the command &lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;curator ./delete_index.yml --config ./curator.yml --dry-run
+2017-04-09 17:27:46,075 INFO      Preparing Action ID: 1, &quot;delete_indices&quot;
+2017-04-09 17:27:46,080 INFO      Trying Action ID: 1, &quot;delete_indices&quot;: Delete indices older than 45 days (based on index name), for logstash- prefixed indices. Ignore the error if the filter does not result in an actionable list of indices (ignore_empty_list) and exit cleanly.
+2017-04-09 17:27:46,538 INFO      DRY-RUN MODE.  No changes will be made.
+2017-04-09 17:27:46,538 INFO      (CLOSED) indices may be shown that may not be acted on by action &quot;delete_indices&quot;.
+2017-04-09 17:27:46,538 INFO      Action ID: 1, &quot;delete_indices&quot; completed.
+2017-04-09 17:27:46,538 INFO      Job completed.&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The &lt;code&gt;--dry-run&lt;/code&gt; mode will not actually delete the index. It can be used to test the output of the action.&lt;/p&gt;
+
+&lt;p&gt;If you want to schedule it in a cron, you can do so using &lt;code&gt;crontab -e&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;00 8 * * * root curator /path/delete_index.yml --config /path/curator.yml &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The above configuration will cleanup the indices older than 10 days everyday at 8 AM.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Angular2 Confirmation Dialog component</title>
+   <link href="http://madhur.co.in/blog/2017/03/26/angular-confirmation-dialog.html"/>
+   <updated>2017-03-26T00:00:00+05:30</updated>
+   <id>id:/blog/2017/03/26/angular-confirmation-dialog</id>
+   <content type="html">&lt;p&gt;Recently, I have been working on Angular2 quite a lot. We had a requirement to come up with a reusable confirmation dialog component. Below is the quick implementation I came up with. I will
+soon wrap it into a npm module. Any feedbacks?&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;confirmation-dialog.component.ts&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-typescript&quot; data-lang=&quot;typescript&quot;&gt;&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Component&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;OnInit&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'@angular/core'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialogRef&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'@angular/material'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;p&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;Component&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'app-confirmation-dialog'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;templateUrl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'./confirmation-dialog.component.html'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;styleUrls&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'./confirmation-dialog.component.scss'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ConfirmationDialogComponent&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;implements&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;OnInit&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;titleAlign&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;messageAlign&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;btnOkText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;btnCancelText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;constructor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialogRef&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ConfirmationDialogComponent&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;nx&quot;&gt;ngOnInit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;&lt;code&gt;confirmation-dialog.service.ts&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-typescript&quot; data-lang=&quot;typescript&quot;&gt;&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Observable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'rxjs/Rx'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ConfirmationDialogComponent&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'./confirmation-dialog.component'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialog&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialogConfig&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'@angular/material'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Injectable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ViewContainerRef&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'@angular/core'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;p&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;Injectable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;export&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ConfirmationDialogsService&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;constructor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dialog&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialog&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;confirm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;viewContainerRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ViewContainerRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;btnOkText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Ok'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;btnCancelText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Cancel'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Observable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;boolean&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialogRef&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ConfirmationDialogComponent&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialogConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;viewContainerRef&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;viewContainerRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dialog&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ConfirmationDialogComponent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;title&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;message&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;btnOkText&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;btnOkText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;btnCancelText&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;btnCancelText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;afterClosed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+     &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;confirmWithoutContainer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;titleAlign&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'center'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;messageAlign&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'center'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;btnOkText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Ok'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;btnCancelText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;string&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Cancel'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Observable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;boolean&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialogRef&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ConfirmationDialogComponent&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MdDialogConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// config.viewContainerRef = viewContainerRef;&lt;/span&gt;
+
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dialog&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ConfirmationDialogComponent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;title&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;message&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;titleAlign&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;titleAlign&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;messageAlign&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;messageAlign&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;btnOkText&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;btnOkText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;componentInstance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;btnCancelText&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;btnCancelText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;afterClosed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;&lt;code&gt;confirmation-dialog.component.html&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;box-holder&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;header-row&quot;&lt;/span&gt;  &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;ngClass&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]=&quot;{'&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;text-center-align&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;titleAlign=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;='center',&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;text-right-align&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;titleAlign=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;='right'&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;}&quot;&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;fxLayoutAlign=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;space-between center&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+       &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;header-title &quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+           
+       &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;content-holder&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;ngClass&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]=&quot;{'&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;text-center-align&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;messageAlign=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;='center',&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;text-right-align&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;messageAlign=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;='right'&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;}&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;fxLayoutAlign=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;start start&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+       
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;action-container&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;fxLayoutAlign=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;end end&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+       &lt;span class=&quot;nt&quot;&gt;&amp;lt;button&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;button&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;md-button&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;od-button od-ripple action-button&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;click&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;)=&quot;&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;()&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;/button&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;button&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;button&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;md-raised-button&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;class=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;od-button od-ripple action-button&quot;&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;click&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;)=&quot;&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;dialogRef&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;)&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;  &lt;span class=&quot;nt&quot;&gt;&amp;lt;/button&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/div&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Useful tcpdump usages</title>
+   <link href="http://madhur.co.in/blog/2017/02/18/useful-tcpdump-netcat-usages.html"/>
+   <updated>2017-02-18T00:00:00+05:30</updated>
+   <id>id:/blog/2017/02/18/useful-tcpdump-netcat-usages</id>
+   <content type="html">&lt;p&gt;&lt;a href=&quot;http://www.tcpdump.org/tcpdump_man.html&quot;&gt;Tcpdump&lt;/a&gt; and &lt;a href=&quot;http://nc110.sourceforge.net/&quot;&gt;Netcat&lt;/a&gt; are one of the most useful utilities for Linux network debugging.&lt;/p&gt;
+
+&lt;p&gt;Some of the examples where I have found &lt;code&gt;tcpdump&lt;/code&gt;  to be extremely useful are given below. In the next post, I will cover netcat.&lt;/p&gt;
+
+&lt;h3&gt;Look for traffic based on IP address&lt;/h3&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tcpdump host 1.2.3.4&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3&gt;Capture based on protocol&lt;/h3&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tcpdump udp&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3&gt;Capture based on interface&lt;/h3&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tcpdump -i eth1&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3&gt;Capture filter based on certain port&lt;/h3&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tcpdump port 80&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3&gt;Capture filter based on source port or destination port&lt;/h3&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tcpdump src port 80
+tcpdump dst port 80&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3&gt;Capture based on port range&lt;/h3&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tcpdump portrange 80-90&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3&gt;Capture display in ASCII&lt;/h3&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tcpdump -A -i eth0&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h3&gt;Capture to a file&lt;/h3&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tcpdump -w 08232010.pcap -i eth0&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Bulk git clone repositories</title>
+   <link href="http://madhur.co.in/blog/2017/02/12/git-bulk-clone.html"/>
+   <updated>2017-02-12T00:00:00+05:30</updated>
+   <id>id:/blog/2017/02/12/git-bulk-clone</id>
+   <content type="html">&lt;p&gt;Recently, I was looking a way to do a git clone in bulk. I came across this nifty little script to do the same&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# The script clones all repositories of an GitHub organization.&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Author: Jens-Andre Koch&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# the github organization to fetch all repositories for&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;GITHUB_ORGANIZATION&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# the git clone cmd used for cloning each repository&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# the parameter recursive is used to clone submodules, too.&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;GIT_CLONE_CMD&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;git clone &quot;&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# fetch repository list via github api&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# grep fetches the json object key ssh_url, which contains the ssh url for the repository&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;REPOLIST&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;curl --silent https://api.github.com/orgs/&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;GITHUB_ORGANIZATION&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;/repos?per_page&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;200 -q | grep &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;ssh_url&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; | awk -F&lt;span class=&quot;s1&quot;&gt;': &quot;'&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'{print $2}'&lt;/span&gt; | sed -e &lt;span class=&quot;s1&quot;&gt;'s/&quot;,//g'&lt;/span&gt;&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# loop over all repository urls and execute clone&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;REPO &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$REPOLIST&lt;/span&gt;; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;GIT_CLONE_CMD&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;REPO&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;You can just invoke it with the argument of either user or organization. For example&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;./clone.sh madhur&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;The problem with this is that it will not clone the private repos since the API used in this request is unauthenticated and will not have access to the private repos.&lt;/p&gt;
+
+&lt;p&gt;I wrote a small little python script which will also clone the private repos.&lt;/p&gt;
+
+&lt;p&gt;First, you need to obtain your &lt;a href=&quot;https://github.com/settings/tokens&quot;&gt;personal access token&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;The gist is available &lt;a href=&quot;https://gist.github.com/madhur/b21e142b529a958ab6413e92bca39e17&quot;&gt;here&lt;/a&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;import requests
+import json
+import subprocess
+
+GITHUB_ORGANIZATION &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;madhur&quot;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;ACCESS_TOKEN&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&quot;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;CLONE_DIR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;./&quot;&lt;/span&gt;
+
+r &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; requests.get&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;https://api.github.com/orgs/&quot;&lt;/span&gt; + GITHUB_ORGANIZATION + &lt;span class=&quot;s2&quot;&gt;&quot;/repos?per_page=200&amp;amp;access_token=&quot;&lt;/span&gt; + ACCESS_TOKEN&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; json.loads&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;r.text&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;repo &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;data:
+    print repo[&lt;span class=&quot;s1&quot;&gt;'full_name'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+    p &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; subprocess.Popen&lt;span class=&quot;o&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;git&quot;&lt;/span&gt;,&lt;span class=&quot;s2&quot;&gt;&quot;clone&quot;&lt;/span&gt;, repo[&lt;span class=&quot;s1&quot;&gt;'clone_url'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]]&lt;/span&gt;, &lt;span class=&quot;nv&quot;&gt;cwd&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;CLONE_DIR&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;  
+    p.wait&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Tuning Linux servers for scalability</title>
+   <link href="http://madhur.co.in/blog/2017/01/30/tuning-linux-servers-scalability.html"/>
+   <updated>2017-01-30T00:00:00+05:30</updated>
+   <id>id:/blog/2017/01/30/tuning-linux-servers-scalability</id>
+   <content type="html">&lt;p&gt;Focus on performance and scalablity is one of my primary personal and professional goal when working with tech products.&lt;/p&gt;
+
+&lt;p&gt;The server can be any Linux based server such as &lt;a href=&quot;https://www.centos.org/&quot;&gt;CentOS&lt;/a&gt; or &lt;a href=&quot;https://www.debian.org/&quot;&gt;Debian&lt;/a&gt; derivative such as &lt;a href=&quot;https://www.ubuntu.com/&quot;&gt;Ubuntu&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;In this post, I will outline my learnings on scaling the Linux server. Scaling here implies many things such as &lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Being able to open many files at once. Here files can be generally applied to concept such as open ports, threads etc and not necessary physical files&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Being able to handle many concurrent network connections&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Knowing Linux OS and related concepts such as &lt;a href=&quot;https://en.wikipedia.org/wiki/Iptables&quot;&gt;Iptables&lt;/a&gt; is a pre-requisite.&lt;/p&gt;
+
+&lt;h2&gt;Open files&lt;/h2&gt;
+
+&lt;p&gt;We need to keep our file limit high for any linux production server. Check the current value using &lt;code&gt;ulimit -a&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;We can configure this limit using &lt;code&gt;/etc/security/limits.conf&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;* hard nofile 300000
+* soft nofile 300000
+
+tomcat hard nofile 300000
+tomcat soft nofile 300000&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Note that we can also specify per user limit as shown above (special limits for tomcat user)&lt;/p&gt;
+
+&lt;p&gt;The file descriptor limit for a running process can be seen in the following file under Max open files.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$ cat /proc/&amp;lt;pid&amp;gt;/limits
+
+Max open files            30000&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2&gt;Ephemeral Ports&lt;/h2&gt;
+
+&lt;p&gt;Increase the number of ephemeal ports availabl to your application. The default value is &lt;code&gt;32768 - 61000&lt;/code&gt;. &lt;/p&gt;
+
+&lt;h2&gt;TIME_WAIT state&lt;/h2&gt;
+
+&lt;p&gt;TCP connections go through lot of states, last of them is &lt;code&gt;TIME_WAIT&lt;/code&gt; state.
+The default &lt;code&gt;TIME_WAIT&lt;/code&gt; timeout is for 2 minutes, Which means you’ll run out of available ports if you receive more than about 400 requests a second, or if we look back to how nginx does proxies, this actually translates to 200 requests per second.&lt;/p&gt;
+
+&lt;p&gt;These parameters can be tuned using these settings in &lt;code&gt;/etc/sysctl.conf&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;net.ipv4.ip_local_port_range = 18000    65535
+net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait = 1&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2&gt;Connection Tracking&lt;/h2&gt;
+
+&lt;p&gt;The next parameter we looked at was Connection Tracking. This is a side effect of using &lt;code&gt;iptables&lt;/code&gt;. Since &lt;code&gt;iptables&lt;/code&gt; needs to allow two-way communication between established HTTP and ssh connections, it needs to keep track of which connections are established, and it puts these into a connection tracking table. This table grows. And grows. And grows.&lt;/p&gt;
+
+&lt;p&gt;You can see the current size of this table using &lt;code&gt;sysctl net.netfilter.nf_conntrack_count&lt;/code&gt; and its limit using &lt;code&gt;sysctl net.nf_conntrack_max&lt;/code&gt;. If count crosses max, your linux system will stop accepting new TCP connections and you’ll never know about this. The only indication that this has happened is a single line hidden somewhere in &lt;code&gt;/var/log/syslog&lt;/code&gt; saying that you’re out of connection tracking entries. One line, once, when it first happens.&lt;/p&gt;
+
+&lt;p&gt;A better indication is if count is always very close to max. You might think, “Hey, we’ve set max exactly right.”, but you’d be wrong.&lt;/p&gt;
+
+&lt;p&gt;What you need to do (or at least that’s what you first think) is to increase max.&lt;/p&gt;
+
+&lt;p&gt;Keep in mind though, that the larger this value, the more RAM the kernel will use to keep track of these entries. RAM that could be used by your application.&lt;/p&gt;
+
+&lt;p&gt;We started down this path, increasing net.nf_conntrack_max, but soon we were just pushing it up every day. Connections that were getting in there were never getting out.&lt;/p&gt;
+
+&lt;h2&gt;Maximum number of pending connections on a socket&lt;/h2&gt;
+
+&lt;p&gt;During some of our initial load testing, we ran into a strange problem where we were unable to open more than approximately 128 concurrent connections at once.&lt;/p&gt;
+
+&lt;p&gt;After some investigation, we learned about the following kernel parameter.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;net.core.somaxconn&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;This kernel parameter is the size of the backlog of TCP connections waiting to be accepted by the application. If a connection indication arrives when the queue is full, the connection is refused. The default value for this parameters is 128 on most modern operating systems.&lt;/p&gt;
+
+&lt;p&gt;Bumping up this limit in &lt;code&gt;/etc/sysctl.conf&lt;/code&gt; helped us get rid of the “connection refused” issues on our Linux machines.&lt;/p&gt;
+
+&lt;h2&gt;JVM thread count&lt;/h2&gt;
+
+&lt;p&gt;A few hours after we allowed a significant percentage of production traffic to hit our server for the first time, we were alerted to the fact that the load balancer was unable to connect to a few of our machines. On further investigation, we saw the following all over our server logs.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;java.lang.OutOfMemoryError: unable to create new native thread&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;If you hit the JVM thread limit, chances are that there is a thread leak in your code that needs to be fixed. However, if you find that all your threads are actually doing useful work, is there a way to tweak the system to let you create more threads and accept more connections?&lt;/p&gt;
+
+&lt;p&gt;The answer, as always, is fun. It’s interesting to discuss how available memory limits the number of threads that can be created on a JVM. The stack size of a thread determines the memory available for static memory allocation. Thus, the absolute theoretical maximum number of threads is a process’s user address space divided by the thread stack size. However, the reality is that the JVM also uses memory for dynamic allocation on the heap. With a few quick tests with a small Java process, we could verify that as more memory is allocated for the heap, less is available for the stack. Thus, the limit on the number of threads decreases with increasing heap size.&lt;/p&gt;
+
+&lt;p&gt;To summarize, you can increase the thread count limit by decreasing the stack size per thread &lt;code&gt;(-Xss)&lt;/code&gt; or by decreasing the memory allocated to the heap &lt;code&gt;(-Xms, -Xmx).&lt;/code&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Close look at proxy_cache_lock and proxy_cache_use_stale in Nginx</title>
+   <link href="http://madhur.co.in/blog/2016/12/25/proxy-cache-lock-nginx.html"/>
+   <updated>2016-12-25T00:00:00+05:30</updated>
+   <id>id:/blog/2016/12/25/proxy-cache-lock-nginx</id>
+   <content type="html">&lt;p&gt;If you have worked with Nginx cache, one must know and understand &lt;a href=&quot;http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_lock&quot;&gt;&lt;code&gt;proxy_cache_lock&lt;/code&gt;&lt;/a&gt; and &lt;a href=&quot;http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale&quot;&gt;&lt;code&gt;proxy_cache_use_stale&lt;/code&gt;&lt;/a&gt; directives.&lt;/p&gt;
+
+&lt;p&gt;To configure simply Nginx caching, we basically add these 2 lines in our configuration block:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;proxy_ignore_headers X-Accel-Expires Expires Cache-Control;
+proxy_cache_valid any 30s;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;This will ignore any of the cache related headers from upstream and keep the cache valid for 30 seconds. This means that a request will only go out to upstream every 30 seconds. But it won&amp;#39;t be one request: it&amp;#39;s very possible that multiple requests will be made when multiple people request the same stale cache. To solve this problem, we add two more configuration directives:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;proxy_cache_lock on; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;proxy_cache_use_stale updating;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Using these two extra configuration directives, Nginx will send only one request to upstream every 30 secs while still responding quickly with stale data.&lt;/p&gt;
+
+&lt;p&gt;An important point to consider here is that default value of &lt;a href=&quot;http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale&quot;&gt;&lt;code&gt;proxy_cache_use_stale&lt;/code&gt;&lt;/a&gt; is &lt;code&gt;off&lt;/code&gt;. That means, if you have set, &lt;a href=&quot;http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_lock&quot;&gt;&lt;code&gt;proxy_cache_lock&lt;/code&gt;&lt;/a&gt; to &lt;code&gt;on&lt;/code&gt;, all the requests which will arrive at Ngix while the cache is being updated will &amp;quot;essentially wait&amp;quot;. During heavy traffic, this can considerably slowdown the performance and response times of the requests.&lt;/p&gt;
+
+&lt;p&gt;Quoting from NGINX docs:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;When enabled, only one request at a time will be allowed to populate a new cache element identified according to the proxy_cache_key directive by     passing a request to a proxied server. Other requests of the same cache  element will either wait for a response to appear in the cache or the cache lock for this element to be released, up to the time set by the proxy_cache_lock_timeout directive&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Thus, it is very important to consider the scenarios in which &lt;a href=&quot;http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_lock&quot;&gt;&lt;code&gt;proxy_cache_lock&lt;/code&gt;&lt;/a&gt; is being used. If it is not possible to serve the stale data to the client, it becomes even more important to configure the &lt;a href=&quot;http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_lock_timeout&quot;&gt;&lt;code&gt;proxy_cache_lock_timeout&lt;/code&gt;&lt;/a&gt; value, otherwise performance can be severely degraded during heavy traffic. The default value of &lt;a href=&quot;http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_lock_timeout&quot;&gt;&lt;code&gt;proxy_cache_lock_timeout&lt;/code&gt;&lt;/a&gt; is 5 seconds which is quite high.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Improving performance using Batch APIs</title>
+   <link href="http://madhur.co.in/blog/2016/12/25/batch-api-framework-nodejs.html"/>
+   <updated>2016-12-25T00:00:00+05:30</updated>
+   <id>id:/blog/2016/12/25/batch-api-framework-nodejs</id>
+   <content type="html">&lt;p&gt;Recently, there is lot of focus on dividing a complex application into small microservices communicating over REST. In most of the cases, REST is implemented over HTTP protocol. All this is great, but HTTP protocol adds lot of communciation overhead. There is a Request header, response headers which adds to considerable bytes in payload. Apart from that, you need to take care of things like &lt;code&gt;keepalive&lt;/code&gt; to eliminate TCP connection time overhead.&lt;/p&gt;
+
+&lt;p&gt;The keepalive does work well for microservices, but it certainly doesn&amp;#39;t work well for let&amp;#39;s say &amp;quot;mobile REST client applications&amp;quot;, where changing network conditions and cell tower will not allow for keep alives. Establishing an HTTP connection, especially when using secure sockets (HTTPS), will result in a handshake being performed between the mobile client and the server. These handshakes will occur N times when N requests are being sent, and your app will incur the associated extra cost of network traffic and battery consumption.&lt;/p&gt;
+
+&lt;p&gt;To mitigate these issues, it is generally advisable to batch HTTP requests whenever possible and send them over a persistent HTTP connection.&lt;/p&gt;
+
+&lt;p&gt;We implemented a very simple Batch API framework in Node.js. It is very looosely based on Facebook&amp;#39;s Graph API documentation, specifically &lt;a href=&quot;https://developers.facebook.com/docs/graph-api/making-multiple-requests&quot;&gt;Graph API, Making Batch Requests&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The request format is very simple, you just specify the end points and the type of requests they are (GET, POST, PUT DELETE, HEAD) etc. For example,&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;  
+   &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+        &lt;span class=&quot;s2&quot;&gt;&quot;method&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;GET&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;path&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/me&quot;&lt;/span&gt;
+   &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+   &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+        &lt;span class=&quot;s2&quot;&gt;&quot;method&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;GET&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;path&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/me/friends?limit=50&quot;&lt;/span&gt;
+   &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+   &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;method&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;POST&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;path&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/notification&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;body&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;s2&quot;&gt;&quot;title&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hi there&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;s2&quot;&gt;&quot;body&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;hi there as well&quot;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;For each operation, the response includes a status code, header information, and the body. These are equivalent to the response you could expect from each operation if performed as raw requests.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;code&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+      &lt;span class=&quot;s2&quot;&gt;&quot;body&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;{\&quot;id\&quot;:\&quot;…\&quot;}&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;code&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;s2&quot;&gt;&quot;body&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;{\&quot;data\&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[{&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;…&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}]}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;One could have also included &lt;code&gt;headers&lt;/code&gt; in the output if required, but I believe it adds unnecessary overhead in the payload.&lt;/p&gt;
+
+&lt;h3&gt;Handling errors&lt;/h3&gt;
+
+&lt;p&gt;Its possible that one of the requested operations may throw an error.  In this scenario, the batch API throws a similar response to the standard Graph API, but encapsulated in the batch response syntax:&lt;/p&gt;
+
+&lt;p&gt;Other requests within the batch should still complete successfully and will be returned, as normal, with a 200 status code.&lt;/p&gt;
+
+&lt;h3&gt;Implementation&lt;/h3&gt;
+
+&lt;p&gt;The batch API framework is implemented in Node.js using &lt;a href=&quot;https://github.com/caolan/async&quot;&gt;async&lt;/a&gt; and &lt;a href=&quot;https://github.com/request/request&quot;&gt;request&lt;/a&gt; module. &lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nx&quot;&gt;performBatch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;items&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;headers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;util&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;getHeaders&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;responses&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[];&lt;/span&gt;
+
+        &lt;span class=&quot;nx&quot;&gt;async&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;forEachOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;items&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+           &lt;span class=&quot;nx&quot;&gt;performRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+               &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                   &lt;span class=&quot;nx&quot;&gt;responses&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;code&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+               &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+               &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                   &lt;span class=&quot;nx&quot;&gt;responses&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;code&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;statusCode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+               &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+               &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+           &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+        &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;responses&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;util&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;keysrt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'o'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;responses&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The &lt;a href=&quot;http://caolan.github.io/async/docs.html#eachOf&quot;&gt;&lt;code&gt;eachOf&lt;/code&gt;&lt;/a&gt; function of &lt;a href=&quot;http://caolan.github.io/async/docs.html#&quot;&gt;async&lt;/a&gt; is used to send the HTTP request for each item in array in parallel. Note, that since this function calls HTTP request for each item in parallel, there is no guarantee that the  functions will complete in order. Hence, the &lt;code&gt;index&lt;/code&gt; is used to keep track of order and pushed with each response.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;performRequest&lt;/code&gt; is a simple function which makes an HTTP request according to the parameters and returns the response in a callback. In case of any error, it simply returns &lt;code&gt;error&lt;/code&gt; parameter as &lt;code&gt;true&lt;/code&gt;&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;performRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+        &lt;span class=&quot;nx&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;self_host&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;body&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;  &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Once all the responses are received, they are sorted according to the &lt;code&gt;index&lt;/code&gt; key using the below function.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;keysrt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;desc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;desc&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;~~&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;~~&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Integrate node.js logging with Sentry</title>
+   <link href="http://madhur.co.in/blog/2016/12/04/integrating-sentry-node.html"/>
+   <updated>2016-12-04T00:00:00+05:30</updated>
+   <id>id:/blog/2016/12/04/integrating-sentry-node</id>
+   <content type="html">&lt;p&gt;Effective logging is crucial to any application deployed in production. For node.js, &lt;a href=&quot;http://expressjs.com/&quot;&gt;express&lt;/a&gt; based applications, we use &lt;a href=&quot;https://github.com/winstonjs/winston&quot;&gt;Winston&lt;/a&gt; as our logging framework.&lt;/p&gt;
+
+&lt;p&gt;In our scenario, we also want some crucial logs to be logged to &lt;a href=&quot;https://sentry.io/welcome/&quot;&gt;Sentry&lt;/a&gt;. &lt;/p&gt;
+
+&lt;p&gt;A simple setup of Sentry is described below. This is same as what is described in &lt;a href=&quot;https://docs.sentry.io/clients/node/integrations/express/&quot;&gt;sentry docs&lt;/a&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;sentry_enabled&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;env&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;NODE_ENV&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'production'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;sentry_enabled&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sentry_enabled&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;raven&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;middleware&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;express&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;requestHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sentry_dsn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// setup routes&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;healthcheck&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sentry_enabled&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;raven&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;middleware&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;express&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;errorHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sentry_dsn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;All good uptil now, except that this setup logs only unhandled exceptions to Sentry. For sending manual log lines to Sentry, sentry recommends using &lt;code&gt;client.captureException(e)&lt;/code&gt; or &lt;code&gt;client.captureMessage(msg)&lt;/code&gt; as per these &lt;a href=&quot;http://expressjs.com/&quot;&gt;docs&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;However, it could be great if we send our winston &lt;code&gt;error&lt;/code&gt; level logs to sentry.&lt;/p&gt;
+
+&lt;p&gt;That&amp;#39;s where &lt;a href=&quot;https://github.com/guzru/winston-sentry&quot;&gt;winston-sentry&lt;/a&gt; packages comes to help. It can send your winston logs to sentry automatically.&lt;/p&gt;
+
+&lt;p&gt;All that is needed is to add a Sentry transport to the winston logger.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;winston&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'winston'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Sentry&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'winston-sentry'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;winston&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;emitErrs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;logger&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;winston&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Logger&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;transports&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;winston&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;transports&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;File&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;level&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'0'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;filename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/opt/logfile.log'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;handleExceptions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;colorize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toLocaleString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'ca'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}),&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;winston&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;transports&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;level&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'info'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;handleExceptions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;colorize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}),&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Sentry&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;level&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'error'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;dsn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;sentry_dsn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;tags&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'value'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;extra&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'value'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;exitOnError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+&lt;span class=&quot;nx&quot;&gt;module&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exports&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;logger&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Couchbase exception handling in Node.js</title>
+   <link href="http://madhur.co.in/blog/2016/12/04/handling-couchbase-node.html"/>
+   <updated>2016-12-04T00:00:00+05:30</updated>
+   <id>id:/blog/2016/12/04/handling-couchbase-node</id>
+   <content type="html">&lt;p&gt;We use &lt;a href=&quot;http://www.couchbase.com/&quot;&gt;Couchbase&lt;/a&gt; as our NOSQL document store. Couchbase provides lots of software development kits (SDKs) in different programming languages, including one in Node.js, so JavaScript development integrates Couchbase into the product very easily. For example:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;couchbase&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'couchbase'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cluster&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;couchbase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Cluster&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'couchbase://127.0.01'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cluster&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;openBucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'default'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;userId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;res&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;//handle error&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;//access data here&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;However, there are some caveats which we have discovered. Suppose, the application was not able to connect to couchbase when it was started. There will never be a connection to couchbase and &lt;code&gt;bucket.get&lt;/code&gt; will throw an exception &lt;code&gt;cannot perform operations on a shutdown bucket&lt;/code&gt;. Note that, this will not fall into an error case, infact this will be treated as an unhandled exception.&lt;/p&gt;
+
+&lt;p&gt;This was really undesirable for us, since we were using couchbase as a caching store. An error in connecting to couchbase is ideally a miss, which our code should handle and lookup the data in our persistent store, MySQL.&lt;/p&gt;
+
+&lt;h2&gt;Solution&lt;/h2&gt;
+
+&lt;p&gt;There are few solutions to this problem. I am describing here what we choose.
+Some of them are described &lt;a href=&quot;https://wiredcraft.com/blog/reconnect-couchbase-nodejs/&quot;&gt;here&lt;/a&gt; as well.&lt;/p&gt;
+
+&lt;p&gt;First is to track the connection status of couchbase at startup. And then connect to couchbase, only if the status indicated success. For example,&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;couchbase&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'couchbase'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cluster&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;couchbase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Cluster&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;couch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cluster&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;openBucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'default'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// connection status&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;couchbaseConnected&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'error'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;couchbaseConnected&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'CONNECT ERROR:'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+&lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'connect'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;couchbaseConnected&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'connected couchbase'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now, since we have the status at startup, we can use it to decide weather to connect to couchbase or not.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;couchbaseConnected&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;userId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;res&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;// handle error&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;// access data&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// get data from persistent store, such as mysql&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The disadvantage of this approach is that if the couchbase later becomes available, the application has no way of knowing it and it will not reconnect.&lt;/p&gt;
+
+&lt;p&gt;One solution to it is to try and reconnect the bucket. For example, we modify our code as follows:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;couchbase&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'couchbase'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cluster&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;couchbase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Cluster&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;couch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;couchbaseConnected&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;nx&quot;&gt;tryOpenBucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;tryOpenBucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cluster&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;openBucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'default'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'error'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;couchbaseConnected&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'CONNECT ERROR:'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+    &lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'connect'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+        &lt;span class=&quot;nx&quot;&gt;couchbaseConnected&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'connected couchbase'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And, while accessing any key:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;couchbaseConnected&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;userId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;res&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;// handle error&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;// access data&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// We try and open bucket again here. If its successful, couchbaseConnected will bet set to true and next time data will be fetched from couchbase &lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;tryOpenBucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// Get data from persistent store, mysql&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;In this solution, We try and open bucket again everytime we access the key. If its successful, &lt;code&gt;couchbaseConnected&lt;/code&gt; will bet set to true and next time data will be fetched from couchbase.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Debugging SSL Issues in Java</title>
+   <link href="http://madhur.co.in/blog/2016/10/30/debugging-ssl-issues-java.html"/>
+   <updated>2016-10-30T00:00:00+05:30</updated>
+   <id>id:/blog/2016/10/30/debugging-ssl-issues-java</id>
+   <content type="html">&lt;p&gt;Recently we faced an issue, where all are calls to a third party vendor were failing with following stack trace in Java&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;javax.net.ssl.SSLHandshakeException: Received fatal alert: handshake_failure 
+at sun.security.ssl.Alerts.getSSLException(Alerts.java:192) 
+at sun.security.ssl.Alerts.getSSLException(Alerts.java:154) 
+at sun.security.ssl.SSLSocketImpl.recvAlert(SSLSocketImpl.java:1979) 
+at sun.security.ssl.SSLSocketImpl.readRecord(SSLSocketImpl.java:1086) 
+at sun.security.ssl.SSLSocketImpl.performInitialHandshake(SSLSocketImpl.java:1332) 
+at sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:1359) 
+at sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:1343) 
+at org.apache.http.conn.ssl.SSLConnectionSocketFactory.createLayeredSocket(SSLConnectionSocketFactory.java:394) 
+at org.apache.http.conn.ssl.SSLConnectionSocketFactory.connectSocket(SSLConnectionSocketFactory.java:353) 
+at org.apache.http.impl.conn.DefaultHttpClientConnectionOperator.connect(DefaultHttpClientConnectionOperator.java:141) 
+at org.apache.http.impl.conn.PoolingHttpClientConnectionManager.connect(PoolingHttpClientConnectionManager.java:353) 
+at org.apache.http.impl.execchain.MainClientExec.establishRoute(MainClientExec.java:380) 
+at org.apache.http.impl.execchain.MainClientExec.execute(MainClientExec.java:236) 
+at org.apache.http.impl.execchain.ProtocolExec.execute(ProtocolExec.java:184) 
+at org.apache.http.impl.execchain.RetryExec.execute(RetryExec.java:88) 
+at org.apache.http.impl.execchain.RedirectExec.execute(RedirectExec.java:110) 
+at org.apache.http.impl.client.InternalHttpClient.doExecute(InternalHttpClient.java:184) 
+at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:82) 
+at org.apache.http.impl.client.CloseableHttpClient.execute(CloseableHttpClient.java:107) 
+at HttpURLConnectionExample.sendGet1(HttpURLConnectionExample.java:83) 
+at HttpURLConnectionExample.main(HttpURLConnectionExample.java:48) 
+at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) 
+at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57) 
+at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) 
+at java.lang.reflect.Method.invoke(Method.java:606) 
+at com.intellij.rt.execution.application.AppMain.main(AppMain.java:144) [Raw read]: length = 5 &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;As per the vendor, there was no issue with their site. Other partners were able to call their API&amp;#39;s successfully.&lt;/p&gt;
+
+&lt;p&gt;This is one of the peculiar problem which happens with Java 7, due to the mismatch of ciphers between Java 7 and the destination webserver.&lt;/p&gt;
+
+&lt;p&gt;In order to debug this in Java, we need to add the parameter &lt;code&gt;-Djavax.net.debug=all&lt;/code&gt; to the command line. Through this command line, we get full debug output such as follows:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;main, READ: TLSv1.2 Handshake, length = 333
+*** ECDH ServerKeyExchange
+Signature Algorithm SHA512withRSA
+Server key: Sun EC public key, 256 bits
+  public x coord: 52151221190485581151214316798815876713912665823307283797594930350231973293152
+  public y coord: 5451449004300784798879937097030816531206591013653597175688384253361719134656
+  parameters: secp256r1 [NIST P-256, X9.62 prime256v1] (1.2.840.10045.3.1.7)
+[read] MD5 and SHA1 hashes:  len = 333
+...
+[Raw read]: length = 5
+0000: 16 03 03 00 04                                     .....
+[Raw read]: length = 4
+0000: 0E 00 00 00                                        ....
+main, READ: TLSv1.2 Handshake, length = 4
+*** ServerHelloDone
+[read] MD5 and SHA1 hashes:  len = 4
+0000: 0E 00 00 00                                        ....
+*** ECDHClientKeyExchange
+ECDH Public value:  { 4, 247, 183, 127, 41, 28, 143, 49, 205, 39, 146, 57, 240, 102, 0, 53, 90, 244, 137, 176, 75, 192, 158, 138, 198, 115, 11, 101, 50, 2, 228, 254, 236, 211, 211, 208, 159, 105, 156, 135, 78, 234, 56, 97, 34, 209, 81, 216, 147, 185, 181, 67, 73, 84, 198, 4, 105, 61, 170, 131, 230, 115, 58, 207, 46 }
+[write] MD5 and SHA1 hashes:  len = 70
+0000: 10 00 00 42 41 04 F7 B7   7F 29 1C 8F 31 CD 27 92  ...BA....)..1.'.
+0010: 39 F0 66 00 35 5A F4 89   B0 4B C0 9E 8A C6 73 0B  9.f.5Z...K....s.
+0020: 65 32 02 E4 FE EC D3 D3   D0 9F 69 9C 87 4E EA 38  e2........i..N.8
+0030: 61 22 D1 51 D8 93 B9 B5   43 49 54 C6 04 69 3D AA  a&quot;.Q....CIT..i=.
+0040: 83 E6 73 3A CF 2E                                  ..s:..
+main, WRITE: TLSv1.2 Handshake, length = 70
+[Raw write]: length = 75
+...
+... no IV derived for this protocol
+main, WRITE: TLSv1.2 Change Cipher Spec, length = 1
+[Raw write]: length = 6
+0000: 14 03 03 00 01 01                                  ......
+*** Finished
+verify_data:  { 162, 89, 141, 227, 142, 139, 54, 27, 241, 56, 38, 145 }
+***
+[write] MD5 and SHA1 hashes:  len = 16
+0000: 14 00 00 0C A2 59 8D E3   8E 8B 36 1B F1 38 26 91  .....Y....6..8&amp;amp;.
+Padded plaintext before ENCRYPTION:  len = 64
+0000: FD AD 67 A2 4D 09 37 F3   4F 7B 53 C5 D9 41 CA 17  ..g.M.7.O.S..A..
+0010: 14 00 00 0C A2 59 8D E3   8E 8B 36 1B F1 38 26 91  .....Y....6..8&amp;amp;.
+0020: BF 2D 9D 66 AA EB 4C E6   4F 35 51 A2 F7 00 40 77  .-.f..L.O5Q...@w
+0030: 2A EA 37 3E 0B 0B 0B 0B   0B 0B 0B 0B 0B 0B 0B 0B  *.7&amp;gt;............
+main, WRITE: TLSv1.2 Handshake, length = 64
+[Raw write]: length = 69
+0000: 16 03 03 00 40 D3 7C 46   86 EE 71 97 63 10 93 8B  ....@..F..q.c...
+0010: 16 28 84 D4 72 CB 29 CA   65 FB 08 6E 5F C7 F2 83  .(..r.).e..n_...
+0020: A7 45 5D 93 86 5B ED D7   AF A4 18 3A 6E AF 46 88  .E]..[.....:n.F.
+0030: 83 0C 09 CC 01 5B BF 8D   AB FD D9 6B 8C D1 E6 A6  .....[.....k....
+0040: AD 10 69 1D 81                                     ..i..
+[Raw read]: length = 5
+0000: 14 03 03 00 01                                     .....
+[Raw read]: length = 1
+0000: 01                                                 .
+main, READ: TLSv1.2 Change Cipher Spec, length = 1
+[Raw read]: length = 5
+0000: 16 03 03 00 40                                     ....@
+[Raw read]: length = 64
+0000: 6C 21 89 CD 5E FF 76 BD   95 43 51 F1 E6 58 64 5C  l!..^.v..CQ..Xd\
+0010: 97 6D DB 98 3F 1C 25 3D   39 DF C6 D3 8C E1 E2 64  .m..?.%=9......d
+0020: 18 BD 91 8A 7F B2 8E 78   82 F7 68 B2 3A 77 08 BE  .......x..h.:w..
+0030: B8 2C 94 2D 06 EE 7B CB   40 86 FA 1A B1 9C 06 3F  .,.-....@......?
+main, READ: TLSv1.2 Handshake, length = 64
+Padded plaintext after DECRYPTION:  len = 64
+0000: 15 A8 6B 92 28 EB 61 3B   2A A0 BA 2F 0E D4 6D F5  ..k.(.a;*../..m.
+0010: 14 00 00 0C 17 9E 44 19   42 D2 7F 29 74 7F 66 A8  ......D.B..)t.f.
+0020: 36 A5 B7 2A 7B A7 D5 B6   DE F2 53 2B 15 E3 CA 5E  6..*......S+...^
+0030: 1A 3F 1D D5 0B 0B 0B 0B   0B 0B 0B 0B 0B 0B 0B 0B  .?..............
+*** Finished
+verify_data:  { 23, 158, 68, 25, 66, 210, 127, 41, 116, 127, 102, 168 }
+***
+%% Cached client session: [Session-1, TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA]
+[read] MD5 and SHA1 hashes:  len = 16
+0000: 14 00 00 0C 17 9E 44 19   42 D2 7F 29 74 7F 66 A8  ......D.B..)t.f.&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Unless you really know SSL protocol in detail, you won&amp;#39;t understand all of it. But atleast I am able to figure out the following:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The protocol in use is TLSv1.2&lt;/li&gt;
+&lt;li&gt;Cipher used was TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA&lt;/li&gt;
+&lt;li&gt;The handshake was successfully completed&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Some of the secure webservers, will only support TLS v1.2 protocol and deny any request on SSLv3 or TSL v1 protocol.&lt;/p&gt;
+
+&lt;p&gt;If that is the case, this is easy to fix in Java by adding following command line parameters&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;JAVACMD=&amp;quot;$JAVACMD -Ddeployment.security.SSLv2Hello=false -Ddeployment.security.SSLv3=false -Ddeployment.security.TLSv1=false -D\
+deployment.security.TLSv1.1=true -Ddeployment.security.TLSv1.2=true&amp;quot;&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;or even this&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;-Dhttps.protocols=TLSv1.1,TLSv1.2&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;However, some of the webservers can force the clients to use very strong ciphers which are not available in Java 7. They are only available in Java 8.&lt;/p&gt;
+
+&lt;p&gt;The list of ciphers supported by SSL site can be found through 
+&lt;a href=&quot;https://www.ssllabs.com/index.html&quot;&gt;https://www.ssllabs.com/index.html&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;In that case, You can download the JCE Unlimited Strength Jurisdiction Policy files for Java 7 from &lt;a href=&quot;http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html&quot;&gt;http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html&lt;/a&gt; and replace the two JARs (&lt;code&gt;local_policy.jar, US_export_policy.jar&lt;/code&gt;) under your JRE&amp;#39;s &lt;code&gt;lib/security&lt;/code&gt; directory with the ones from the downloaded package. This will add additional (stronger) ciphersuites and you should be able to connect without having to make any changes to your code or enable TLSv1.2.&lt;/p&gt;
+
+&lt;p&gt;For reference, here are the ciphersuites available in Java 7 (1.7.0_79):&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;  SSL_DH_anon_WITH_3DES_EDE_CBC_SHA
+        SSL_DH_anon_WITH_DES_CBC_SHA
+        SSL_DH_anon_WITH_RC4_128_MD5
+        SSL_RSA_EXPORT_WITH_DES40_CBC_SHA
+        SSL_RSA_EXPORT_WITH_RC4_40_MD5
+*       SSL_RSA_WITH_3DES_EDE_CBC_SHA
+        SSL_RSA_WITH_DES_CBC_SHA
+        SSL_RSA_WITH_NULL_MD5
+        SSL_RSA_WITH_NULL_SHA
+*       SSL_RSA_WITH_RC4_128_MD5
+*       SSL_RSA_WITH_RC4_128_SHA
+*       TLS_DHE_DSS_WITH_AES_128_CBC_SHA
+*       TLS_DHE_DSS_WITH_AES_128_CBC_SHA256
+*       TLS_DHE_RSA_WITH_AES_128_CBC_SHA
+*       TLS_DHE_RSA_WITH_AES_128_CBC_SHA256
+        TLS_DH_anon_WITH_AES_128_CBC_SHA
+        TLS_DH_anon_WITH_AES_128_CBC_SHA256
+*       TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA
+*       TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+*       TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+        TLS_ECDHE_ECDSA_WITH_NULL_SHA
+*       TLS_ECDHE_ECDSA_WITH_RC4_128_SHA
+*       TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA
+*       TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA
+*       TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+        TLS_ECDHE_RSA_WITH_NULL_SHA
+*       TLS_ECDHE_RSA_WITH_RC4_128_SHA
+*       TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA
+*       TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA
+*       TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256
+        TLS_ECDH_ECDSA_WITH_NULL_SHA
+*       TLS_ECDH_ECDSA_WITH_RC4_128_SHA
+*       TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA
+*       TLS_ECDH_RSA_WITH_AES_128_CBC_SHA
+*       TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256
+        TLS_ECDH_RSA_WITH_NULL_SHA
+*       TLS_ECDH_RSA_WITH_RC4_128_SHA
+        TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA
+        TLS_ECDH_anon_WITH_AES_128_CBC_SHA
+        TLS_ECDH_anon_WITH_NULL_SHA
+        TLS_ECDH_anon_WITH_RC4_128_SHA
+*       TLS_EMPTY_RENEGOTIATION_INFO_SCSV
+        TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5
+        TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA
+        TLS_KRB5_EXPORT_WITH_RC4_40_MD5
+        TLS_KRB5_EXPORT_WITH_RC4_40_SHA
+        TLS_KRB5_WITH_3DES_EDE_CBC_MD5
+        TLS_KRB5_WITH_3DES_EDE_CBC_SHA
+        TLS_KRB5_WITH_DES_CBC_MD5
+        TLS_KRB5_WITH_DES_CBC_SHA
+        TLS_KRB5_WITH_RC4_128_MD5
+        TLS_KRB5_WITH_RC4_128_SHA
+*       TLS_RSA_WITH_AES_128_CBC_SHA
+*       TLS_RSA_WITH_AES_128_CBC_SHA256
+        TLS_RSA_WITH_NULL_SHA256&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;and here are the ones after using the Unlimited Stringth Jurisdiction policy files:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;        SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA
+*       SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA
+        SSL_DHE_DSS_WITH_DES_CBC_SHA
+        SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA
+*       SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA
+        SSL_DHE_RSA_WITH_DES_CBC_SHA
+        SSL_DH_anon_EXPORT_WITH_DES40_CBC_SHA
+        SSL_DH_anon_EXPORT_WITH_RC4_40_MD5
+        SSL_DH_anon_WITH_3DES_EDE_CBC_SHA
+        SSL_DH_anon_WITH_DES_CBC_SHA
+        SSL_DH_anon_WITH_RC4_128_MD5
+        SSL_RSA_EXPORT_WITH_DES40_CBC_SHA
+        SSL_RSA_EXPORT_WITH_RC4_40_MD5
+*       SSL_RSA_WITH_3DES_EDE_CBC_SHA
+        SSL_RSA_WITH_DES_CBC_SHA
+        SSL_RSA_WITH_NULL_MD5
+        SSL_RSA_WITH_NULL_SHA
+*       SSL_RSA_WITH_RC4_128_MD5
+*       SSL_RSA_WITH_RC4_128_SHA
+*       TLS_DHE_DSS_WITH_AES_128_CBC_SHA
+*       TLS_DHE_DSS_WITH_AES_128_CBC_SHA256
+*       TLS_DHE_DSS_WITH_AES_256_CBC_SHA
+*       TLS_DHE_DSS_WITH_AES_256_CBC_SHA256
+*       TLS_DHE_RSA_WITH_AES_128_CBC_SHA
+*       TLS_DHE_RSA_WITH_AES_128_CBC_SHA256
+*       TLS_DHE_RSA_WITH_AES_256_CBC_SHA
+*       TLS_DHE_RSA_WITH_AES_256_CBC_SHA256
+        TLS_DH_anon_WITH_AES_128_CBC_SHA
+        TLS_DH_anon_WITH_AES_128_CBC_SHA256
+        TLS_DH_anon_WITH_AES_256_CBC_SHA
+        TLS_DH_anon_WITH_AES_256_CBC_SHA256
+*       TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA
+*       TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+*       TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+*       TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA
+*       TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384
+        TLS_ECDHE_ECDSA_WITH_NULL_SHA
+*       TLS_ECDHE_ECDSA_WITH_RC4_128_SHA
+*       TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA
+*       TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA
+*       TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+*       TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
+*       TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
+        TLS_ECDHE_RSA_WITH_NULL_SHA
+*       TLS_ECDHE_RSA_WITH_RC4_128_SHA
+*       TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA
+*       TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA
+*       TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256
+*       TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA
+*       TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384
+        TLS_ECDH_ECDSA_WITH_NULL_SHA
+*       TLS_ECDH_ECDSA_WITH_RC4_128_SHA
+*       TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA
+*       TLS_ECDH_RSA_WITH_AES_128_CBC_SHA
+*       TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256
+*       TLS_ECDH_RSA_WITH_AES_256_CBC_SHA
+*       TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384
+        TLS_ECDH_RSA_WITH_NULL_SHA
+*       TLS_ECDH_RSA_WITH_RC4_128_SHA
+        TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA
+        TLS_ECDH_anon_WITH_AES_128_CBC_SHA
+        TLS_ECDH_anon_WITH_AES_256_CBC_SHA
+        TLS_ECDH_anon_WITH_NULL_SHA
+        TLS_ECDH_anon_WITH_RC4_128_SHA
+*       TLS_EMPTY_RENEGOTIATION_INFO_SCSV
+        TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5
+        TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA
+        TLS_KRB5_EXPORT_WITH_RC4_40_MD5
+        TLS_KRB5_EXPORT_WITH_RC4_40_SHA
+        TLS_KRB5_WITH_3DES_EDE_CBC_MD5
+        TLS_KRB5_WITH_3DES_EDE_CBC_SHA
+        TLS_KRB5_WITH_DES_CBC_MD5
+        TLS_KRB5_WITH_DES_CBC_SHA
+        TLS_KRB5_WITH_RC4_128_MD5
+        TLS_KRB5_WITH_RC4_128_SHA
+*       TLS_RSA_WITH_AES_128_CBC_SHA
+*       TLS_RSA_WITH_AES_128_CBC_SHA256
+*       TLS_RSA_WITH_AES_256_CBC_SHA
+*       TLS_RSA_WITH_AES_256_CBC_SHA256
+        TLS_RSA_WITH_NULL_SHA256&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Hope that helps anyone running into SSL issues with Java.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Learnings from moving from MBR to GPT, multi-booting and random stuff</title>
+   <link href="http://madhur.co.in/blog/2016/10/16/learning-moving-mbr-gpt-uefi.html"/>
+   <updated>2016-10-16T00:00:00+05:30</updated>
+   <id>id:/blog/2016/10/16/learning-moving-mbr-gpt-uefi</id>
+   <content type="html">&lt;p&gt;This weekend, I converted all my 3 disks (2 HDD and 1 SSD) from a &lt;a href=&quot;https://en.wikipedia.org/wiki/Master_boot_record&quot;&gt;MBR&lt;/a&gt; based partition table to the newer one &lt;a href=&quot;https://en.wikipedia.org/wiki/GUID_Partition_Table&quot;&gt;GPT&lt;/a&gt;. This was some work as I had to ensure that all my existing OSes ( &lt;a href=&quot;https://www.debian.org/&quot;&gt;Debian 8&lt;/a&gt;, &lt;a href=&quot;https://www.kali.org/&quot;&gt;Kali&lt;/a&gt; and &lt;a href=&quot;https://www.microsoft.com/en-in/software-download/windows10ISO&quot;&gt;Windows 10&lt;/a&gt; ) run smoothlessly. &lt;/p&gt;
+
+&lt;p&gt;I am sharing some of the lessons and solutions to problem I faced:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Make sure you backup all importand data and have bootable ISO&amp;#39;s (USB or CDs) of Operating Systems you want up and running. I cannot stress this enough. While working with disk partition tables, things go wrong very easily and you will have an unbootable system very soon. This will be especially true if you are a tinkerer and like going deep into things. Having bootable USB drives will save you a lot of time. Use tools like &lt;a href=&quot;https://unetbootin.github.io/&quot;&gt;unetbootin&lt;/a&gt; or familiarize your self with &lt;a href=&quot;https://en.wikipedia.org/wiki/Dd_(Unix)&quot;&gt;dd command&lt;/a&gt; to create this yourself.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Read about UEFI. This is a very new standard with confusing information all over the internet. In a nutshell, it is nothing more than a partition with code &lt;code&gt;ef00&lt;/code&gt;, but it is also a standard and a firmware.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Some of these readings would help:&lt;br&gt;
+&lt;a href=&quot;https://en.wikipedia.org/wiki/EFI_system_partition&quot;&gt;https://en.wikipedia.org/wiki/EFI_system_partition&lt;/a&gt;&lt;br&gt;
+&lt;a href=&quot;https://wiki.archlinux.org/index.php/EFI_System_Partition&quot;&gt;https://wiki.archlinux.org/index.php/EFI_System_Partition&lt;/a&gt;&lt;br&gt;
+&lt;a href=&quot;https://msdn.microsoft.com/en-us/windows/hardware/commercialize/manufacture/desktop/configure-uefigpt-based-hard-drive-partitions&quot;&gt;https://msdn.microsoft.com/en-us/windows/hardware/commercialize/manufacture/desktop/configure-uefigpt-based-hard-drive-partitions&lt;/a&gt;&lt;br&gt;
+&lt;a href=&quot;http://superuser.com/questions/520068/efi-partition-vs-boot-partition&quot;&gt;http://superuser.com/questions/520068/efi-partition-vs-boot-partition&lt;/a&gt;&lt;br&gt;
+&lt;a href=&quot;https://wiki.debian.org/UEFI&quot;&gt;https://wiki.debian.org/UEFI&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;First make sure your &lt;a href=&quot;https://en.wikipedia.org/wiki/BIOS&quot;&gt;BIOS&lt;/a&gt; supports &lt;a href=&quot;https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface&quot;&gt;UEFI&lt;/a&gt;. Most of the new BIOS do it but there are some quirks and each BIOS manufacturer is different. For example, in my case HDD boot order does not work for UEFI boot. I had to switch the SATA cables in my HDD to make sure &lt;a href=&quot;https://en.wikipedia.org/wiki/GNU_GRUB&quot;&gt;GRUB&lt;/a&gt; is my primary bootloader. Also, when you enable UEFI in BIOS, you will get double entries for eash UEFI Boot enabled disk. (one for UEFI boot and other for normal boot). Don&amp;#39;t be alarmed by it, its normal.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;You will need to do actual conversion of partition tables first. For this, best utility is combination of &lt;a href=&quot;http://www.rodsbooks.com/gdisk/&quot;&gt;gdisk&lt;/a&gt; and &lt;a href=&quot;http://gparted.org/&quot;&gt;gparted&lt;/a&gt; works best. Make sure you spend some time going through their commands. I created &lt;a href=&quot;http://gparted.org/livecd.php&quot;&gt;gparted live CD&lt;/a&gt; Do not do this conversion in Windows. &lt;a href=&quot;http://askubuntu.com/questions/84501/how-can-i-change-convert-a-ubuntu-mbr-drive-to-a-gpt-and-make-ubuntu-boot-from&quot;&gt;How can I change/convert a Ubuntu MBR drive to a GPT, and make Ubuntu boot from EFI?&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;If you are using Windows, familiarize with &lt;a href=&quot;https://technet.microsoft.com/en-us/library/cc709667(v=ws.10).aspx&quot;&gt;bcdedit&lt;/a&gt; . It is a command line tool to work with Windows boot entries. I would not advise using tools like &lt;a href=&quot;http://neosmart.net/EasyBCD/c&quot;&gt;EasyBCD&lt;/a&gt; etc as they are too buggy.
+For linux, make sure you know &lt;a href=&quot;http://man7.org/linux/man-pages/man8/mount.8.html&quot;&gt;mount&lt;/a&gt; and &lt;a href=&quot;https://en.wikipedia.org/wiki/Chroot&quot;&gt;chroot&lt;/a&gt; very well, these commands are very handy and it saves a lot of time if you them in advance than looking up internet everytime.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;It is also good to determine when your OS is booted up in UEFI mode vs legacy mode. For linux, this command works: &lt;code&gt;cat /sys/firmware/efi&lt;/code&gt; , If this folder exists, the system is booted in UEFI mode. &lt;a href=&quot;http://askubuntu.com/questions/162564/how-can-i-tell-if-my-system-was-booted-as-efi-uefi-or-bios&quot;&gt;How can I tell if my system was booted as EFI/UEFI or BIOS?&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;For linux GRUB, you will need to install &lt;code&gt;grub-efi-amd64&lt;/code&gt; or &lt;code&gt;grub-efi&lt;/code&gt;. Also remember to run &lt;code&gt;update-grub&lt;/code&gt; after conversion. You might be also required to install the bootloader again using &lt;code&gt;grub install /dev/sdX&lt;/code&gt; depending upon the situation. &lt;a href=&quot;http://superuser.com/questions/376470/how-to-reinstall-grub2-efi&quot;&gt;How to reinstall GRUB2 EFI?&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;If you are running debian based system, this article is gold &lt;a href=&quot;http://www.getreu.net/public/downloads/doc/legacy2UEFIboot/Transform-Debian_7_wheezy-from_legacy_to_UEFI_boot_mode.html#_boot_a_live_system&quot;&gt;Switch Debian 7 wheezy from legacy to UEFI boot mode&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;More references:&lt;br&gt;
+&lt;a href=&quot;http://www.rodsbooks.com/gdisk/whatsgpt.html&quot;&gt;What&amp;#39;s a GPT?&lt;/a&gt;&lt;br&gt;
+&lt;a href=&quot;http://www.rodsbooks.com/gdisk/booting.html&quot;&gt;Booting from GPT&lt;/a&gt;&lt;br&gt;
+&lt;a href=&quot;http://www.rodsbooks.com/gdisk/advice.html&quot;&gt;Partitioning Advice&lt;/a&gt;&lt;br&gt;
+&lt;a href=&quot;http://askubuntu.com/questions/235567/windows-8-removes-grub-as-default-boot-manager&quot;&gt;Windows 8 removes Grub as default boot manager&lt;/a&gt;&lt;br&gt;
+&lt;a href=&quot;http://www.rodsbooks.com/gdisk/walkthrough.html&quot;&gt;A gdisk Walkthrough&lt;/a&gt;  &lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Effect of connection pooling on node.js performance</title>
+   <link href="http://madhur.co.in/blog/2016/09/05/nodejs-connection-pooling.html"/>
+   <updated>2016-09-05T00:00:00+05:30</updated>
+   <id>id:/blog/2016/09/05/nodejs-connection-pooling</id>
+   <content type="html">&lt;p&gt;&lt;a href=&quot;https://nodejs.org/en/&quot;&gt;Node.js&lt;/a&gt; is popularly known for its asynchronous, non-blocking and event-driven I/O model and the scalability it can achieve in executing &lt;a href=&quot;https://en.wikipedia.org/wiki/I/O_bound&quot;&gt;I/O bound&lt;/a&gt; operations.&lt;/p&gt;
+
+&lt;p&gt;However, a developer must keep in mind that there are some things which can severely limit the scalability of the Node.js application. I have earlier already covered &lt;a href=&quot;/blog/2016/05/28/nodejs-dns-cache.html&quot;&gt;How DNS resolution is a blocking call in node and must be handled to achieve scalability&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;In this post, I am going to cover &lt;a href=&quot;https://en.wikipedia.org/wiki/Connection_pool&quot;&gt;connection pooling&lt;/a&gt;. I have observed that connection pooling is a critical engineering decision which is easily ignored while developing node.js applications.  While interacting with any external resource such as &lt;a href=&quot;https://www.mysql.com/&quot;&gt;MySQL&lt;/a&gt;, &lt;a href=&quot;https://www.postgresql.org/&quot;&gt;PostgreSQL&lt;/a&gt;, &lt;a href=&quot;http://redis.io/&quot;&gt;Redis&lt;/a&gt; or &lt;a href=&quot;https://www.mongodb.com/&quot;&gt;MongoDB&lt;/a&gt;, each of it requires a connection pool for any sizeable node.js application.&lt;/p&gt;
+
+&lt;p&gt;To demonstrate this, I am going to compare two programs, one without pooling and one with pooling and a simple database query.&lt;/p&gt;
+
+&lt;p&gt;I have this simple function which makes a call to database.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;user_query&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;select count(*) from user u, access_code uac, user_location_info uli   where u.id = uac.user_id and u.id = uli.user_id&quot;&lt;/span&gt;
+
+
+    &lt;span class=&quot;nx&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;user_query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;fields&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;No device token found for user: &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;16182&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;deviceToken&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;][&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'device_token'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;If I execute this and time it, it takes an average of 1.5 - 2 seconds&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$ time node paralleltest.js
+
+real    0m1.756s
+user    0m0.159s
+sys     0m0.017s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Lets, now run multiple of such queries in series first. I slightly change my program to this version:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nx&quot;&gt;async&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;series&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;results&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;results&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;When I execute this version where I am making 5 calls in series, I get an average of 8 - 9 seconds&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$ time node paralleltest.js
+
+real    0m8.579s
+user    0m0.178s
+sys     0m0.019s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Lets make this to parallel now, common sense says that the wall clock time should be much faster in case of parallel.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nx&quot;&gt;async&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;parallel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;results&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;results&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now, If I time this verison, where I am making 5 calls in parallel.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$ time node paralleltest.js
+
+real    0m8.168s
+user    0m0.165s
+sys     0m0.018s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;I still get the almost same wall time clock. If you closely observe the time output, the bulk of the time is not even spent in our program. Bulk of the time is actually spent in waiting to get the connection back from mysql, since we are re-using the single connection again and again. Thus, there is literally no performance gain inspite of making the calls in &amp;quot;parallel&amp;quot;&lt;/p&gt;
+
+&lt;p&gt;To fix this, I am going to change the program to use a connection pool. I am creating a simple pool as follows:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;pool&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;mysql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;createPool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;connectionLimit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//important&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'127.0.0.1'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'***'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'***'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;database&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'user'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;debug&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And change our function to use the connection pool: &lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;hitQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;user_query&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;select count(*) from user u, access_code uac, user_location_info uli   where u.id = uac.user_id and u.id = uli.user_id&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;nx&quot;&gt;pool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;getConnection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;release&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;res&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;code&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;status&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Error in connection database&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;nx&quot;&gt;connection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;user_query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;fields&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;No device token found for user: &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;16182&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Again, If I time the single execution time here. I get&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$ time node paralleltest1.js
+
+real    0m1.763s
+user    0m0.163s
+sys     0m0.020s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Not much has changed, we got &lt;code&gt;1.756&lt;/code&gt; while using without connection pooling. The benefit of connection pooling is only when we run multiple requests together. So now, lets execute in series of 5 queries as done earlier.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$ time node paralleltest1.js
+
+real    0m8.192s
+user    0m0.182s
+sys     0m0.019s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Again, no real benefit. What is happening here is that &lt;a href=&quot;http://caolan.github.io/async/docs.html#.series&quot;&gt;the second query is executed only after the first query is executed&lt;/a&gt;. Hence, this time is perfectly fine. Its just that bulk of time is wasted.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;#39;s move this to 5 parallel queries.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$ time node paralleltest1.js
+
+real    0m2.311s
+user    0m0.175s
+sys     0m0.019s&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;This time we have brought it down to &lt;code&gt;2.311 seconds&lt;/code&gt; from &lt;code&gt;8.168 seconds&lt;/code&gt; which was the time it took to execute without having a connection pool.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Code linting tools</title>
+   <link href="http://madhur.co.in/blog/2016/09/04/code-linting-tools.html"/>
+   <updated>2016-09-04T00:00:00+05:30</updated>
+   <id>id:/blog/2016/09/04/code-linting-tools</id>
+   <content type="html">&lt;p&gt;Recently, I have been involved in integrating &lt;a href=&quot;https://en.wikipedia.org/wiki/Lint_(software)&quot;&gt;linting&lt;/a&gt; tools with our build tool &lt;a href=&quot;https://jenkins.io/&quot;&gt;Jenkins&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;I have been researching appropriate linting tools for programming languages used in our tech stack, primarily &lt;a href=&quot;https://en.wikipedia.org/wiki/Java_(programming_language)&quot;&gt;Java&lt;/a&gt;, &lt;a href=&quot;https://www.python.org/&quot;&gt;Python&lt;/a&gt; and &lt;a href=&quot;https://en.wikipedia.org/wiki/JavaScript&quot;&gt;Javascript&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Given below is my findings and our choosen lint tools.&lt;/p&gt;
+
+&lt;h2&gt;Java&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&quot;http://findbugs.sourceforge.net/&quot;&gt;Findbugs&lt;/a&gt;
+It looks for bugs in Java programs. It can detect a variety of common coding mistakes, including thread synchronization problems, misuse of API methods, etc.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&quot;http://pmd.github.io/&quot;&gt;PMD&lt;/a&gt;
+It scans Java source code and looks for potential problems: Possible bugs, Dead code, Suboptimal code, Overcomplicated expressions and Duplicate code.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&quot;http://checkstyle.sourceforge.net/&quot;&gt;Checkstyle&lt;/a&gt;&lt;br&gt;
+It is a development tool to help programmers write Java code that adheres to a coding standard.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;Javascript&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&quot;http://eslint.org/&quot;&gt;EsLint&lt;/a&gt;&lt;br&gt;
+ESLint is the most recent out of the four. It was designed to be easily extensible, comes with a large number of custom rules, and it’s easy to install more in the form of plugins. It gives concise output, but includes the rule name by default so you always know which rules are causing the error messages.&lt;/p&gt;
+
+&lt;p&gt;ESLint documentation can be a bit hit or miss. The rules list is easy to follow and is grouped into logical categories, but the configuration instructions are a little confusing in places. It does, however, offer links to editor integration, plugins and examples all in a single location.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&quot;http://jshint.com/&quot;&gt;JSHint&lt;/a&gt;&lt;br&gt;
+JSHint was created as a more configurable version of JSLint (of which it is a fork). You can configure every rule, and put them into a configuration file, which makes JSHint easy to use in bigger projects. JSHint also has good documentation for each of the rules, so you know exactly what they do. Integrating it into editors is also simple.&lt;/p&gt;
+
+&lt;p&gt;A small downside to JSHint is that it comes with a relaxed default configuration. This means you need to do some setup to make it useful. When comparing it with ESLint, it’s also more difficult to know which rules you need to change in order to enable or disable certain error messages.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&quot;http://www.jslint.com/&quot;&gt;JSLint&lt;/a&gt;&lt;br&gt;
+JSLint is the oldest of the four. Douglas Crockford created it in 2002 to enforce what, in his experience, are the good parts of JavaScript. If you agree with the good parts, JSLint can be a good tool—you install it and it’s ready to go.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;Python&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://pychecker.sourceforge.net/&quot;&gt;pychecker&lt;/a&gt; - executes (be careful)&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://pypi.python.org/pypi/pyflakes&quot;&gt;pyflakes&lt;/a&gt; - parses, great for finding NameErrors, obsolete imports&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.pylint.org/&quot;&gt;pylint&lt;/a&gt; - parses, very comprehensive (on the excessive-compulsive side).&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.python.org/dev/peps/pep-0008/&quot;&gt;pep8&lt;/a&gt; - parses, a style checker.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://pypi.python.org/pypi/flake8&quot;&gt;flake8&lt;/a&gt; - parser, combines pep8 and pyflakes, with added complexity support, extensible.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;For java, we went with &lt;a href=&quot;http://findbugs.sourceforge.net/&quot;&gt;Findbugs&lt;/a&gt;, simply because the kind of problems it can detect. Other java linting tools focus more on code style, indentation, spacing , variable naming etc. Findbugs is only tool which can go deep and find out some real issues in your code.&lt;/p&gt;
+
+&lt;p&gt;For Javascript, &lt;a href=&quot;http://eslint.org/&quot;&gt;ESLint&lt;/a&gt;, because of its extensibility. Other contenders like JSHit and JSLint are either obsolete or does not offer extensibility.&lt;/p&gt;
+
+&lt;p&gt;For python, we went with &lt;a href=&quot;https://www.pylint.org/&quot;&gt;pylint&lt;/a&gt; again because of its extensibility.&lt;/p&gt;
+
+&lt;p&gt;There are some other tools which are programming language agnostic such as &lt;a href=&quot;http://www.sonarqube.org/&quot;&gt;Sonar&lt;/a&gt;. However, I haven&amp;#39;t got a chance to try them.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Adding Service worker to Jekyll Site</title>
+   <link href="http://madhur.co.in/blog/2016/08/21/service-worker-jekyll-site.html"/>
+   <updated>2016-08-21T00:00:00+05:30</updated>
+   <id>id:/blog/2016/08/21/service-worker-jekyll-site</id>
+   <content type="html">&lt;p&gt;I finally added the &lt;a href=&quot;http://www.html5rocks.com/en/tutorials/service-worker/introduction/&quot;&gt;service worker&lt;/a&gt; for my Jekyll site &lt;a href=&quot;https://madhur.co.in&quot;&gt;madhur.co.in&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;For introduction, Service workers enable rich offline experiences, periodic background syncs and push notifications.&lt;/p&gt;
+
+&lt;p&gt;For start, I have just implemented offline caching of JS/CSS/HTML files so that the site can be browsed even when offline. &lt;/p&gt;
+
+&lt;p&gt;Here is the simplest definition of a service worker which generates the Url of pages so that they can be cached&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;o&quot;&gt;---&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;layout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;---&lt;/span&gt;
+
+
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cacheName&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'madhur-cache-v1'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;filesToCache&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// Stylesheets&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// Pages and assets&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;page&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;html_pages&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;page&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;contains&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'projects'&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;page&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;contains&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'404'&lt;/span&gt;   &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;s1&quot;&gt;'{{ page.url }}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;endif&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;endfor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Blog posts&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;post&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;s1&quot;&gt;'{{ post.url }}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;endfor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// JS files, Portfolio assets and main video&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// (!) This will throw a Liquid error. Read below.&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;static_files&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;extname&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'.js'&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;path&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;contains&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/portfolio/screenshots'&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;path&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;contains&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'/portfolio/thumbnails'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+              &lt;span class=&quot;s1&quot;&gt;'{{ file.path }}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;endif&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;endfor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+
+
+&lt;span class=&quot;c1&quot;&gt;// serviceWorker.js&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addEventListener&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'install'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;waitUntil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;caches&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;cacheName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;then&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addAll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;filesToCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+&lt;span class=&quot;nx&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addEventListener&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'fetch'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;respondWith&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;caches&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;then&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'[*] Serving cached: '&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+                &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'[*] Fetching: '&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;fetch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The generated file can be seen at &lt;a href=&quot;http://www.madhur.co.in/serviceWorker.js&quot;&gt;http://www.madhur.co.in/serviceWorker.js&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;In current implementation, the service worker will always return the response from the cache if one exists. However, there are lot of strategies which can be implemented for example:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Cache Only&lt;/li&gt;
+&lt;li&gt;Network only&lt;/li&gt;
+&lt;li&gt;Cache First&lt;/li&gt;
+&lt;li&gt;Network First&lt;/li&gt;
+&lt;li&gt;Fastest&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;These and many other such patterns are documented in &lt;a href=&quot;https://jakearchibald.com/2014/offline-cookbook/&quot;&gt;offline cookbook&lt;/a&gt; &lt;/p&gt;
+
+&lt;p&gt;These patterns can be easy implemented using &lt;a href=&quot;https://github.com/GoogleChrome/sw-toolbox&quot;&gt;sw-toolbox&lt;/a&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ 
+</feed>

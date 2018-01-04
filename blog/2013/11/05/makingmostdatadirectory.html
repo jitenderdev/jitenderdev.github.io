@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    
+        <title>Making most out of _data directory in Jekyll &#8211; Madhur Ahuja</title>
+    
+
+    <meta name="author" content="Madhur Ahuja" />
+    <meta name="description" content=" Making most out of _data directory in Jekyll" />
+
+    <link rel="start" href="/" />
+
+    <link rel="alternate" type="application/atom+xml" href="http://feeds.feedburner.com/madhur" title="RSS feed" />
+    <link rel="shortcut icon" href="http://www.gravatar.com/avatar/5352cde0b084abcd6d4d783c08a51c76?s=16" />
+
+    <link rel="stylesheet" href="/files/css/bootstrap.min.css" type="text/css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/files/font-awesome/css/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="/files/css/jquery.fancybox.css" type="text/css" />
+
+    <link rel="stylesheet" type="text/css" href="/files/css/styles.css" />
+    
+    
+    <link rel="stylesheet" type="text/css" href="/files/css/syntax.css" />
+    
+
+    <link rel="stylesheet" type="text/css" media="print" href="/files/css/print.css">
+
+     
+   
+    <script src="/files/js/vendor/pace.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+
+    <div class="container">
+       
+            <header id="header" class="row">
+
+                <nav id="navigation" class="navbar navbar-inverse navbar-fixed-top " role="navigation">
+    <div class="container">
+
+    <div class="navbar-header">
+
+     <div class="hidden-md hidden-sm hidden-lg searchli">
+
+                <form method="get" role="search" id="searchform" action="/results" onsubmit="return checkfrm_search();">
+
+                    <div class="form-group">
+                        <input type="search" required id="q2" name="q" value="" class="form-control mobile" placeholder="Search" />
+                    </div>
+                </form>
+        </div>
+
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#mainmenu">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <!--  <a class="navbar-brand " href="/">Home</a> -->
+    </div>
+
+    <div class="collapse navbar-collapse" id="mainmenu">
+        <ul id="nav" class="nav navbar-nav">
+            
+            <li><a class="home" href="/">Home</a>
+            </li>
+            <li><a class="blog" href="/blog">Blog</a>
+            </li>
+            <!--<li><a class="work" href="/work">Resume</a></li>-->
+            <li><a class="code" href="/projects">Work</a>
+            </li>
+            <!--<li><a class="papers" href="/papers">Papers</a></li>-->
+            <li><a class="info" href="/info">About</a>
+            </li>
+            <li><a class="contact" href="/contact">Contact</a>
+            </li>
+
+        </ul>
+
+        <ul class="nav navbar-nav visible-md visible-lg visible-sm searchbox">
+            <li>
+                <form method="get" role="search" id="searchform" action="/results" onsubmit="return checkfrm_search();">
+
+                    <div class="form-group">
+                        <input type="search" required id="q1" name="q" value="" class="form-control desktop" placeholder="Search" />
+                    </div>
+                </form>
+            </li>
+        </ul>
+
+
+        <ul class="nav-icons navbar-right nav navbar-nav visible-md visible-lg">
+            <li><a href="http://www.linkedin.com/in/madhurahuja"><i class="fa fa-linkedin-square fa-3x"></i></a>
+            </li>
+            <li><a href="https://github.com/madhur"><i class="fa fa-github fa-3x"></i></a>
+            </li>
+            <li><a href="http://feeds.feedburner.com/madhur"><i class="fa fa-rss-square fa-3x"></i></a>
+            </li>
+        </ul>
+
+
+    </div>
+
+</div>
+</nav>
+
+
+            </header>
+       
+        <div id="content" class="row">
+
+            <section>
+
+	<div id="blogcontent">
+
+		<!--<aside class="postmeta col-md-3 hidden-print visible-md visible-lg">
+
+			
+
+		</aside>-->
+
+		<article id="blog-article" class="post col-md-12 clearfix">
+
+				<header><h1>Making most out of _data directory in Jekyll</h1></header>
+			
+					<!-- Place this tag where you want the +1 button to render -->
+<div class="row social hidden-xs">
+	<div class="col-md-2 col-sm-2">
+		<time datetime="2013-11-05 00:00:00 +0530" pubdate="pubdate">05 November 2013</time>
+	</div>
+    <div class="social-icon col-md-1 col-sm-1">
+        <div class="g-plusone" data-size="small"></div>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <a href="https://twitter.com/share?count=vertical" class="twitter-share-button" data-via="madhur25">Tweet</a>
+        <script>
+        ! function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0],
+                p = /^http:/.test(d.location) ? 'http' : 'https';
+            if (!d.getElementById(id)) {
+                js = d.createElement(s);
+                js.id = id;
+                js.src = p + '://platform.twitter.com/widgets.js';
+                fjs.parentNode.insertBefore(js, fjs);
+            }
+        }(document, 'script', 'twitter-wjs');
+        </script>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <script src="//platform.linkedin.com/in.js" type="text/javascript">
+        lang: en_US
+        </script>
+        <script type="IN/Share" data-counter="right"></script>
+    </div>
+
+    <div class="social-icon col-md-1 col-sm-2">
+        <a href="http://bufferapp.com/add" class="buffer-add-button" data-count="horizontal">Buffer</a>
+        <script type="text/javascript" src="https://d389zggrogs7qo.cloudfront.net/js/button.js"></script>
+    </div>
+    <div class="social-icon col-md-1 col-sm-2">
+        <a data-pocket-label="pocket" data-pocket-count="horizontal" class="pocket-btn" data-lang="en"></a>
+        <script type="text/javascript">
+        ! function(d, i) {
+            if (!d.getElementById(i)) {
+                var j = d.createElement("script");
+                j.id = i;
+                j.src = "https://widgets.getpocket.com/v1/j/btn.js?v=1";
+                var w = d.getElementById(i);
+                d.body.appendChild(j);
+            }
+        }(document, "pocket-btn-js");
+        </script>
+    </div>
+				<div class="social-icon col-md-2 col-sm-2">
+<script type="text/javascript" src="//www.redditstatic.com/button/button1.js"></script>
+				</div>
+
+	
+</div>
+<!-- Place this tag after the last plusone tag -->
+<!-- Place this tag after the last +1 button tag. -->
+<script type="text/javascript">
+(function() {
+    var po = document.createElement('script');
+    po.type = 'text/javascript';
+    po.async = true;
+    po.src = 'https://apis.google.com/js/platform.js';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(po, s);
+})();
+</script>
+
+
+			<hr style="margin-top:0px" />
+
+
+			 <p>Jekyll 1.3.0 comes with exciting new features especially the use of <code>\_data</code> directories. The <code>\_data</code> directory is very useful in cases where you want to store
+metadata related to your site or blog and want to load it in runtime. Earlier people used to put this in <code>\_config.yml</code> which was kind of a hack.</p>
+
+<h2>How can you make most out of _data directory ?</h2>
+
+<p>If you&#39;ve a file <code>trucks.yaml</code> under <code>\_data</code>, then you can access it with </p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text"> 
+{% for truck in site.data.trucks %}
+ </code></pre></figure>
+  
+
+<p>So you can have <code>members.yaml, projects.yaml, products.yaml</code> under <code>\_data</code>, and access them respectively as</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text"> 
+site.data.members
+site.data.projects 
+site.data.products
+ </code></pre></figure>
+  
+
+<p>For instance, this current site itself makes use of <code>\_data</code> directory extensively. Have a look at <a href="/projects">Projects</a> section.</p>
+
+<p>The entire left navigation of <a href="/projects">Projects</a> section is driven dynamically through a simple YAML file in <code>\_data</code> directory, which is <a href="https://github.com/madhur/madhur.github.com/blob/source/_data/projects.yaml"><code>projects.yaml</code></a> and looks like:</p>
+
+<figure class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span class="nn">---</span>
+<span class="pi">-</span> <span class="na">project</span><span class="pi">:</span> <span class="s">Hermes</span>
+  <span class="na">category</span><span class="pi">:</span> <span class="s">Android</span>
+  <span class="na">publish</span><span class="pi">:</span> <span class="s">yes</span>
+  <span class="na">description</span><span class="pi">:</span> <span class="s">Hermes is an attempt to provide a sense of security to all the travelers</span> 
+  <span class="s">of all over the world and especially the women in India who use the public transport to</span> 
+  <span class="s">commute to their work place and back home.</span>
+  
+<span class="pi">-</span> <span class="na">project</span><span class="pi">:</span> <span class="s">Silverlight Organization Chart for SharePoint</span>
+  <span class="na">category</span><span class="pi">:</span> <span class="s">SharePoint</span>
+  <span class="na">publish</span><span class="pi">:</span> <span class="s">yes</span>
+  <span class="na">description</span><span class="pi">:</span> <span class="s">A silverlight Chart control which retrieves data from the SharePoint list.</span> 
+  
+<span class="pi">-</span> <span class="na">project</span><span class="pi">:</span> <span class="s">STP Inspector</span>
+  <span class="na">category</span><span class="pi">:</span> <span class="s">SharePoint</span>
+  <span class="na">publish</span><span class="pi">:</span> <span class="s">yes</span>
+  <span class="na">description</span><span class="pi">:</span> <span class="s">STP Inspector is an site template inspector for WSS/MOSS 2007.</span> 
+  <span class="s">It analyzes a site template file (.stp) and basically shows its dependencies on the site</span> 
+  <span class="s">features and site collection features.</span>  </code></pre></figure>
+  
+
+<p>Now what I can in Jekyll is simply refer to Project Name, category, description using the site variable array as <code>site.data.projects</code> and loop through it using</p>
+
+<figure class="highlight"><pre><code class="language-html" data-lang="html"> 
+{% for project in site.data.projects %}
+{{ project.project }}
+{% endfor %}
+ </code></pre></figure>
+  
+
+<p>Using the simple structure above, I have dynamically generated both my left navigation and content page. In future, if I work on a new project, I just need to edit the <code>projects.yaml</code> file and Jekyll would automatically update the left navigation and content page.</p>
+
+<p>This is the simple code of generating left navigation which I have done in my includes file  <a href=""><code>projects-left.html</code></a></p>
+
+<figure class="highlight"><pre><code class="language-html" data-lang="html"> 
+<span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"projects"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">"single"</span><span class="nt">&gt;&lt;a</span> <span class="na">href=</span><span class="s">"/projects"</span><span class="nt">&gt;</span>Projects<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
+
+    {% for category in site.data.categories %}
+        <span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">"project-category"</span><span class="nt">&gt;</span>{{ category.category }}<span class="nt">&lt;/p&gt;</span>
+            <span class="nt">&lt;ul</span> <span class="na">class=</span><span class="s">"subcategory"</span><span class="nt">&gt;</span>
+
+                {% for project in site.data.projects %}
+                
+                    {% if project.category == category.category and project.publish == true %}
+                        <span class="nt">&lt;li&gt;&lt;a</span> <span class="na">href=</span><span class="s">"/projects/{{ project.project }}.html"</span><span class="nt">&gt;</span>{{ project.project }}<span class="nt">&lt;/a&gt;&lt;/li&gt;</span>
+                    {% endif %}
+
+                {% endfor %}
+        <span class="nt">&lt;/ul&gt;</span>
+    {% endfor %}
+
+<span class="nt">&lt;/div&gt;</span> 
+ </code></pre></figure>
+  
+
+<p>This is how I generate my content page which nicely generates the project names along with descriptions. You can have a look at source <a href="https://raw.github.com/madhur/madhur.github.com/source/projects/index.markdown">here</a></p>
+
+<figure class="highlight"><pre><code class="language-html" data-lang="html"> 
+{% for project in site.data.projects %}
+                    
+    {% if project.publish == true %}
+        <span class="nt">&lt;strong&gt;&lt;a</span> <span class="na">href=</span><span class="s">"/projects/{{ project.project }}.html"</span><span class="nt">&gt;</span>{{ project.project }}<span class="nt">&lt;/a&gt;&lt;/strong&gt;</span>
+        
+        <span class="nt">&lt;span</span> <span class="na">class=</span><span class="s">"tag-project"</span><span class="nt">&gt;</span>{{ project.category }}<span class="nt">&lt;/span&gt;</span>
+        {{ project.description }}
+        <span class="nt">&lt;hr/&gt;</span>
+    {% endif %}
+        
+{% endfor %}
+<span class="nt">&lt;/div&gt;</span>
+ </code></pre></figure>
+ 
+
+<p>This is where <code>\_data</code> directory comes in handy where you don&#39;t want to embed little pieces of information regarding your site in dirty repeating html. Using <code>\_data</code> directory, you can make the information which is going to change over the period of time structured and also provide dynamism at the same time.</p>
+
+			<footer>
+				<div class="blocked tags">
+					<p>
+					
+						<a href="/blog/tags/jekyll">Jekyll</a> |
+					
+					</p>
+				</div>
+			</footer>
+			
+			<br/>
+		
+			
+			
+			<div class="hr"></div>
+
+		
+
+
+			<!-- Discus Comments -->
+			<div id="disqus_thread"></div>
+
+			
+			<!-- Enable Disqus comments -->
+			<script type="text/javascript">
+  var disqus_developer = 0; // developer mode is on
+  var disqus_shortname = 'madhur';
+  var disqus_identifier = '/2013/11/05/makingmostdatadirectory/';
+  var disqus_title = 'Making most out of _data directory in Jekyll';
+  var disqus_url = 'http://madhur.co.in/blog/2013/11/05/makingmostdatadirectory.html';
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+
+</script>
+
+			
+			
+			
+			
+
+		</article>
+
+		<div class="c">&nbsp;</div>
+
+	</div>
+
+	
+</section>
+ 
+<div class="c">&nbsp;</div>
+
+
+  
+<script type="text/javascript">
+    
+    var disqus_shortname = 'madhur'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = 'http://' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+ 
+
+ 
+
+
+
+        </div>
+
+
+        <footer id="footer" class="row">
+
+            <p id="copyright">
+                &copy; 2011-2017 Madhur Ahuja
+            </p>
+            <p id="poweredby" class="visible-lg visible-md">
+                Powered by
+                <a href="http://jekyllrb.com" title="A static, minimalist CMS">Jekyll</a>, <a href="http://github.com/">Github</a> and <a href="http://disqus.com">Disqus</a>.
+            </p>
+
+            <div class="c">&nbsp;</div>
+
+
+        </footer>
+
+
+    </div>
+
+    <script data-main="/files/js/app" src="/files/js/require.js"></script>
+
+    
+        <script type="text/javascript">
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-23769089-1']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+    
+
+    <!-- serviceWorker.html -->
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/serviceWorker.js').then(function(reg) {
+        if (!reg.installing) return;
+        console.log("[*] ServiceWorker is installing...");
+
+        var worker = reg.installing;
+        worker.addEventListener('statechange', function() {
+            if (worker.state == 'redundant') {
+                console.log('[*] Install failed');
+            }
+            if (worker.state == 'installed') {
+                console.log('[*] Install successful!');
+            }
+        });
+    });
+}
+
+</script>
+
+</body>
+
+</html>

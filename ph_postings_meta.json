@@ -1,0 +1,623 @@
+{
+    "posts": [
+     
+    {
+        "title": "Handling stack traces in Elasticsearch Logstash Kibana (ELK)",
+        "href": "/blog/2017/04/30/view-exceptions-in-elk.html",
+        "words": " elk"
+    } 
+     
+    {
+        "title": "Using curator to delete older elasticsearch indices",
+        "href": "/blog/2017/04/09/usingcuratordeleteelasticindex.html",
+        "words": " curator elasticsearch"
+    } 
+     
+    {
+        "title": "Angular2 Confirmation Dialog component",
+        "href": "/blog/2017/03/26/angular-confirmation-dialog.html",
+        "words": " angular typescript"
+    } 
+     
+    {
+        "title": "Useful tcpdump usages",
+        "href": "/blog/2017/02/18/useful-tcpdump-netcat-usages.html",
+        "words": " tcpdump"
+    } 
+     
+    {
+        "title": "Bulk git clone repositories",
+        "href": "/blog/2017/02/12/git-bulk-clone.html",
+        "words": " git"
+    } 
+     
+    {
+        "title": "Tuning Linux servers for scalability",
+        "href": "/blog/2017/01/30/tuning-linux-servers-scalability.html",
+        "words": " linux scalability tcp/ip"
+    } 
+     
+    {
+        "title": "Close look at proxy_cache_lock and proxy_cache_use_stale in Nginx",
+        "href": "/blog/2016/12/25/proxy-cache-lock-nginx.html",
+        "words": " nginx caching"
+    } 
+     
+    {
+        "title": "Improving performance using Batch APIs",
+        "href": "/blog/2016/12/25/batch-api-framework-nodejs.html",
+        "words": " performance"
+    } 
+     
+    {
+        "title": "Integrate node.js logging with Sentry",
+        "href": "/blog/2016/12/04/integrating-sentry-node.html",
+        "words": " node.js sentry"
+    } 
+     
+    {
+        "title": "Couchbase exception handling in Node.js",
+        "href": "/blog/2016/12/04/handling-couchbase-node.html",
+        "words": " node.js couchbase"
+    } 
+     
+    {
+        "title": "Debugging SSL Issues in Java",
+        "href": "/blog/2016/10/30/debugging-ssl-issues-java.html",
+        "words": " java ssl"
+    } 
+     
+    {
+        "title": "Learnings from moving from MBR to GPT, multi-booting and random stuff",
+        "href": "/blog/2016/10/16/learning-moving-mbr-gpt-uefi.html",
+        "words": " linux os uefi mbr gpt"
+    } 
+     
+    {
+        "title": "Effect of connection pooling on node.js performance",
+        "href": "/blog/2016/09/05/nodejs-connection-pooling.html",
+        "words": " node.js programming"
+    } 
+     
+    {
+        "title": "Code linting tools",
+        "href": "/blog/2016/09/04/code-linting-tools.html",
+        "words": " lint programming"
+    } 
+     
+    {
+        "title": "Adding Service worker to Jekyll Site",
+        "href": "/blog/2016/08/21/service-worker-jekyll-site.html",
+        "words": " jekyll service worker"
+    } 
+     
+    {
+        "title": "Caching authenticated requests using NGINX",
+        "href": "/blog/2016/07/31/nginx-cache-authenticated-requests.html",
+        "words": " caching nginx"
+    } 
+     
+    {
+        "title": "Create a couchbase bucket during build of the container",
+        "href": "/blog/2016/07/07/create-couchbase-bucket-docker.html",
+        "words": " couchbase docker"
+    } 
+     
+    {
+        "title": "Speeding up Node.js HTTP requests with DNS caching",
+        "href": "/blog/2016/05/28/nodejs-dns-cache.html",
+        "words": " nodejs"
+    } 
+     
+    {
+        "title": "Things to learn for Modern Web Development",
+        "href": "/blog/2016/05/14/things-learn-modern-web-development.html",
+        "words": " programming es6 react web"
+    } 
+     
+    {
+        "title": "Read Google docs spreadsheet using Python",
+        "href": "/blog/2016/05/13/google-docs-spreadsheet.html",
+        "words": " python"
+    } 
+     
+    {
+        "title": "Handling special characters in Python 2",
+        "href": "/blog/2016/04/25/handling-special-characters-python.html",
+        "words": " python"
+    } 
+     
+    {
+        "title": "Making AngularJs play nice with Social sharing",
+        "href": "/blog/2016/04/09/making-angular-play-nice-with-social-sharing.html",
+        "words": " angularjs"
+    } 
+     
+    {
+        "title": "Understanding free output in Linux",
+        "href": "/blog/2016/04/08/understanding-free-output.html",
+        "words": " linux"
+    } 
+     
+    {
+        "title": "On calling your former employers shit",
+        "href": "/blog/2016/04/08/calling-former-employers-shit.html",
+        "words": " general"
+    } 
+     
+    {
+        "title": "NSImage Caching",
+        "href": "/blog/2016/01/25/using-ns-image.html",
+        "words": " osx swift cocoa"
+    } 
+     
+    {
+        "title": "Google groups for Developers",
+        "href": "/blog/2016/01/03/google-groups-developers.html",
+        "words": " programming"
+    } 
+     
+    {
+        "title": "Managing Programmers By Douglas Crockford",
+        "href": "/blog/2015/12/27/managing-programmers.html",
+        "words": " programming"
+    } 
+     
+    {
+        "title": "Timing function / task execution in Celery",
+        "href": "/blog/2015/12/14/timing-function-calls.html",
+        "words": " celery python"
+    } 
+     
+    {
+        "title": "Ringtone Preference in Feed Notifier",
+        "href": "/blog/2015/12/06/notification-feed-notifier.html",
+        "words": " android"
+    } 
+     
+    {
+        "title": "Flexbox is not supported Android 4.3 and below",
+        "href": "/blog/2015/11/29/flexbox-not-supported.html",
+        "words": " android webview ionic"
+    } 
+     
+    {
+        "title": "Scaling Celery Task queue",
+        "href": "/blog/2015/11/17/celery-tips-and-tricks.html",
+        "words": " programming python celery"
+    } 
+     
+    {
+        "title": "CountDownLatch in Python using Condition Objects",
+        "href": "/blog/2015/11/02/countdownlatch-python.html",
+        "words": " programming python"
+    } 
+     
+    {
+        "title": "Feed notifier updated",
+        "href": "/blog/2015/10/25/feed-notifier-updated.html",
+        "words": " programming android"
+    } 
+     
+    {
+        "title": "Why is only UI thread allowed to modify the UI",
+        "href": "/blog/2015/10/18/ui-thread-modify.html",
+        "words": " programming threading"
+    } 
+     
+    {
+        "title": "Angular Chat popup",
+        "href": "/blog/2015/09/14/angular-chat-popup.html",
+        "words": " angularjs javascript"
+    } 
+     
+    {
+        "title": "Caching http requests with Angular",
+        "href": "/blog/2015/08/24/angular-caching.html",
+        "words": " angularjs caching javascript"
+    } 
+     
+    {
+        "title": "Emoji Keyboard and Chat bubbles in Android",
+        "href": "/blog/2015/03/06/emoji-bubbles-android.html",
+        "words": " android emoji chat"
+    } 
+     
+    {
+        "title": "Encoding and Decoding Emoji for Cross platform",
+        "href": "/blog/2014/12/26/emoji-encoding-decoding.html",
+        "words": " angularjs emoji"
+    } 
+     
+    {
+        "title": "Useful Javascript Design patterns",
+        "href": "/blog/2014/12/15/javascript-design-patterns.html",
+        "words": " javascript"
+    } 
+     
+    {
+        "title": "Multiboot: Booting linux from ISO placed in HDD via GRUB",
+        "href": "/blog/2014/10/18/linux-multiboot.html",
+        "words": " linux"
+    } 
+     
+    {
+        "title": "An awesome conky configuration",
+        "href": "/blog/2014/10/10/awesome-conky.html",
+        "words": " linux"
+    } 
+     
+    {
+        "title": "Union and Intersection of ArrayList in Java",
+        "href": "/blog/2014/07/29/unionintersection.html",
+        "words": " java"
+    } 
+     
+    {
+        "title": "Find Nth largest element in an array",
+        "href": "/blog/2014/07/28/findnthlargest.html",
+        "words": " algorithms"
+    } 
+     
+    {
+        "title": "Algorithm: Convert number to word",
+        "href": "/blog/2014/07/28/convertnumbertoword.html",
+        "words": " algorithms"
+    } 
+     
+    {
+        "title": "Building Git 2.0.0 from sources on Windows",
+        "href": "/blog/2014/06/08/guidebuildgit2.html",
+        "words": " git"
+    } 
+     
+    {
+        "title": "Change ImageView src based on Android Application theme",
+        "href": "/blog/2014/06/04/changeimageviewsrctheme.html",
+        "words": " android"
+    } 
+     
+    {
+        "title": "Hermes removed from Play Store by Google",
+        "href": "/blog/2014/05/26/hermesremoved.html",
+        "words": " android"
+    } 
+     
+    {
+        "title": "Javascript Basics Part IV",
+        "href": "/blog/2014/05/25/javascriptbasic4.html",
+        "words": " javascript development"
+    } 
+     
+    {
+        "title": "Javascript Basics Part III",
+        "href": "/blog/2014/05/24/javascriptbasics3.html",
+        "words": " javascript development"
+    } 
+     
+    {
+        "title": "Javascript Basics Part II",
+        "href": "/blog/2014/05/23/javascriptbasics2.html",
+        "words": " javascript development"
+    } 
+     
+    {
+        "title": "Javascript Basics Part I",
+        "href": "/blog/2014/05/22/javascriptbasics.html",
+        "words": " javascript development"
+    } 
+     
+    {
+        "title": "Portable Jekyll Upgraded to 2.0.1",
+        "href": "/blog/2014/05/07/portablejekyllupdated.html",
+        "words": " jekyll development"
+    } 
+     
+    {
+        "title": "Decoding the hidden Wunderlist API (Part II)",
+        "href": "/blog/2014/05/02/decodewunderlistapi2.html",
+        "words": " wunderlist api rest development"
+    } 
+     
+    {
+        "title": "Decoding the hidden Wunderlist API (Part I)",
+        "href": "/blog/2014/05/02/decodewunderlistapi.html",
+        "words": " wunderlist api rest development"
+    } 
+     
+    {
+        "title": "Feedly OAuth 2.0 implementation using Scribe in Java",
+        "href": "/blog/2014/04/17/feedlyoauth2flow.html",
+        "words": " feedly oauth2 development"
+    } 
+     
+    {
+        "title": "Updating Created By field in SharePoint through Client Object Model",
+        "href": "/blog/2014/04/09/updatingcreatedby.html",
+        "words": " sharepoint 2010 client object model development"
+    } 
+     
+    {
+        "title": "Hosting Git repository on a Windows LAN",
+        "href": "/blog/2014/04/09/hostgitwindowslan.html",
+        "words": " git development"
+    } 
+     
+    {
+        "title": "Writing Silverlight people picker control using SharePoint 2010 Client object model",
+        "href": "/blog/2014/01/29/silverlight-people-picker.html",
+        "words": " silverlight sharepoint 2010 web_development"
+    } 
+     
+    {
+        "title": "Reading and writing People Values in SharePoint List through Silverlight Client object model",
+        "href": "/blog/2014/01/29/read-write-people-values-sharepoint-silverlight.html",
+        "words": " silverlight sharepoint 2010 web_development"
+    } 
+     
+    {
+        "title": "Convert claims based login name in SharePoint Client object model",
+        "href": "/blog/2014/01/29/convert-claim-based-login-name.html",
+        "words": " silverlight sharepoint 2010 web_development"
+    } 
+     
+    {
+        "title": "New look for my site",
+        "href": "/blog/2014/01/10/newlookofmysite.html",
+        "words": " css web_development"
+    } 
+     
+    {
+        "title": "Portable Jekyll Updated to Jekyll v1.3.0",
+        "href": "/blog/2013/11/05/updateportablejekyll.html",
+        "words": " jekyll web_development"
+    } 
+     
+    {
+        "title": "Making most out of _data directory in Jekyll",
+        "href": "/blog/2013/11/05/makingmostdatadirectory.html",
+        "words": " jekyll web_development"
+    } 
+     
+    {
+        "title": "Introducing Hermes Android App",
+        "href": "/blog/2013/11/05/introducinghermesandroidapp.html",
+        "words": " android"
+    } 
+     
+    {
+        "title": "Building portable Jekyll for Windows",
+        "href": "/blog/2013/07/20/buildportablejekyll.html",
+        "words": " jekyll web_development"
+    } 
+     
+    {
+        "title": "Adventures with Corel Draw",
+        "href": "/blog/2013/07/20/adventurecoreldraw.html",
+        "words": " corel draw"
+    } 
+     
+    {
+        "title": "Jekyll upgraded to 1.0.2",
+        "href": "/blog/2013/06/02/jekyllupgraded.html",
+        "words": " jekyll"
+    } 
+     
+    {
+        "title": "Browser Market Share of Internet Explorer",
+        "href": "/blog/2012/05/05/browsermarketshare.html",
+        "words": " internt explorer general"
+    } 
+     
+    {
+        "title": "WebServices or Client Object Model",
+        "href": "/blog/2012/04/15/webservicescom.html",
+        "words": " sharepoint 2010 general"
+    } 
+     
+    {
+        "title": "Move your projects from TFS to Git in Codeplex",
+        "href": "/blog/2012/03/27/codeplexmovegit.html",
+        "words": " git general"
+    } 
+     
+    {
+        "title": "Enable code highlighting with Pygments/Jekyll",
+        "href": "/blog/2012/03/05/codehighlightjekyll.html",
+        "words": " jekyll web_development"
+    } 
+     
+    {
+        "title": "What's wrong with Microsoft",
+        "href": "/blog/2012/03/01/whatswrongwithmsft.html",
+        "words": " microsoft general"
+    } 
+     
+    {
+        "title": "How to upgrade your Jekyll Blog/Site to HTML5",
+        "href": "/blog/2012/02/26/upgradehtml5.html",
+        "words": " html5 web_development"
+    } 
+     
+    {
+        "title": "Learning HTML5",
+        "href": "/blog/2012/02/20/learnhtml5.html",
+        "words": " html5 web_development"
+    } 
+     
+    {
+        "title": "Conditional comments in Internet Explorer",
+        "href": "/blog/2012/02/20/conditionalcommentsie.html",
+        "words": " ie web_development"
+    } 
+     
+    {
+        "title": "Future of Web and Mobile: HTML5, CSS3 and Javascript",
+        "href": "/blog/2012/02/15/futurewebmobile.html",
+        "words": " html5 css3 javascript"
+    } 
+     
+    {
+        "title": "Using MakeFile with Assembly Programming",
+        "href": "/blog/2012/02/08/makefileassembly.html",
+        "words": " assembly masm"
+    } 
+     
+    {
+        "title": "Updated with Blueprint CSS Framework",
+        "href": "/blog/2012/02/02/updateblueprintcss.html",
+        "words": " jekyll css"
+    } 
+     
+    {
+        "title": "GitHub Pages are served from the Default Branch",
+        "href": "/blog/2012/02/02/githubpages.html",
+        "words": " github"
+    } 
+     
+    {
+        "title": "Invoke SharePoint 2010 Approval Workflow with Dynamic Approvers using Web Services and Jquery",
+        "href": "/blog/2012/01/09/spworkflowapprovers.html",
+        "words": " sharepoint 2010 jquery"
+    } 
+     
+    {
+        "title": "Silverlight Chart Control for SharePoint 2010",
+        "href": "/blog/2011/12/29/slchart.html",
+        "words": " silverlight sharepoint 2010"
+    } 
+     
+    {
+        "title": "Windows command shell(cmd.exe) runs only first command",
+        "href": "/blog/2011/12/29/cmdshellfirst.html",
+        "words": " windows"
+    } 
+     
+    {
+        "title": "Privilege escalation on Windows using Binary Planting",
+        "href": "/blog/2011/09/23/privilegeescalation.html",
+        "words": " privilege escalation windows"
+    } 
+     
+    {
+        "title": "Difference between Filtered vs Closed Ports",
+        "href": "/blog/2011/09/18/filteredclosed.html",
+        "words": " hacking nmap"
+    } 
+     
+    {
+        "title": "Crack or Reset Windows Passwords",
+        "href": "/blog/2011/09/18/crackresetwindows.html",
+        "words": " hacking windows"
+    } 
+     
+    {
+        "title": "HackingLab Challenge: Disassemble .NET Clients",
+        "href": "/blog/2011/09/10/hackchallenge.html",
+        "words": " hacking disassembling .net"
+    } 
+     
+    {
+        "title": "Best fonts for programming",
+        "href": "/blog/2011/09/09/bestfontscode.html",
+        "words": " code programming"
+    } 
+     
+    {
+        "title": "Removing the Default Editor Parts from SharePoint Web Parts",
+        "href": "/blog/2011/09/06/hidingproppane.html",
+        "words": " sharepoint webparts"
+    } 
+     
+    {
+        "title": "AOE slang",
+        "href": "/blog/2011/09/06/aoeslang.html",
+        "words": " aoe"
+    } 
+     
+    {
+        "title": "Running Jekyll on Windows",
+        "href": "/blog/2011/09/01/runningjekyllwindows.html",
+        "words": " jekyll windows"
+    } 
+     
+    {
+        "title": "Migrating 3rd party blogs to Jekyll",
+        "href": "/blog/2011/09/01/migratingblogtojekyll.html",
+        "words": " jekyll"
+    } 
+     
+    {
+        "title": "Pass the Hash Exploitation on Windows",
+        "href": "/blog/2011/08/16/passthehash.html",
+        "words": " hacking windows pass the hash"
+    } 
+     
+    {
+        "title": "Burnout",
+        "href": "/blog/2011/08/13/burnout.html",
+        "words": " burnout health"
+    } 
+     
+    {
+        "title": "Integrating Wordpress Tag cloud Plugin in Jekyll",
+        "href": "/blog/2011/08/12/wptagcloudjekyll.html",
+        "words": " jekyll code"
+    } 
+     
+    {
+        "title": "Protections against buffer overflow exploits in Linux",
+        "href": "/blog/2011/08/06/protbufferoverflow.html",
+        "words": " security exploits"
+    } 
+     
+    {
+        "title": "Classic Buffer overflow exploits on Linux x64",
+        "href": "/blog/2011/08/04/exploitdevlinux.html",
+        "words": " security exploits"
+    } 
+     
+    {
+        "title": "Exploring Web Application vulnerabilities",
+        "href": "/blog/2011/07/26/explorwebappsecurity.html",
+        "words": " security hacking"
+    } 
+     
+    {
+        "title": "Hacking Router password using Hydra",
+        "href": "/blog/2011/07/25/hackrouterpassword.html",
+        "words": " security hacking"
+    } 
+     
+    {
+        "title": "My Top Network Security Tools",
+        "href": "/blog/2011/06/22/topsecuritytools.html",
+        "words": " security"
+    } 
+     
+    {
+        "title": "Facebook Vulnerability - Session sidejacking",
+        "href": "/blog/2011/06/12/facebooksessionhijacking.html",
+        "words": " facebook session sidejacking security"
+    } 
+     
+    {
+        "title": "Creating Tag cloud of Categories in Jekyll",
+        "href": "/blog/2011/06/11/tagcloudjekyll.html",
+        "words": " jekyll code"
+    } 
+     
+    {
+        "title": "Github as a development platform",
+        "href": "/blog/2011/06/11/githubplatform.html",
+        "words": " github code"
+    } 
+     
+    {
+        "title": "Reverse engineering Google chrome extensions",
+        "href": "/blog/2011/06/03/reverseengineerchrome.html",
+        "words": " reverse engineering chrome"
+    } 
+    
+    ]
+}
