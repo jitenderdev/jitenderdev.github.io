@@ -5,7 +5,7 @@
  * Thanks for MaterializeCSS.com
  */
 
-.default_color{background-color: #05B217 !important}
+.default_color{background-color: #009688 !important}
 
 .default_color_text{color: #2196F3 !important}
 
@@ -20,7 +20,7 @@
     min-height: 632px;
     max-height: 864px;
     position: relative;
-    background-color: #05B217;
+    background-color: #009688;
 }
 
 #nav_f{
